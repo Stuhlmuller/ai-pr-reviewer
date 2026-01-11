@@ -4,6 +4,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![GitHub](https://img.shields.io/github/last-commit/coderabbitai/ai-pr-reviewer/main?style=flat-square)](https://github.com/coderabbitai/ai-pr-reviewer/commits/main)
+[![Coverage](https://img.shields.io/badge/coverage-20%25-red?style=flat-square)](https://github.com/coderabbitai/ai-pr-reviewer)
 
 ## Overview
 
