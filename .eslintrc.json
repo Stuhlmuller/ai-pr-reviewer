@@ -24,5 +24,13 @@
     "node": true,
     "es6": true,
     "jest/globals": true
-  }
+  },
+  "overrides": [
+    {
+      "files": ["__tests__/**/*.ts", "**/*.test.ts"],
+      "parserOptions": {
+        "project": "./tsconfig.eslint.json"
+      }
+    }
+  ]
 }
