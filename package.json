@@ -50,7 +50,7 @@
     "chatgpt": "5.2.5",
     "conventional-changelog-conventionalcommits": "9.1.0",
     "eslint": "9.39.2",
-    "eslint-plugin-github": "4.10.2",
+    "eslint-plugin-github": "6.0.0",
     "eslint-plugin-import": "2.32.0",
     "eslint-plugin-jest": "27.9.0",
     "eslint-plugin-n": "16.6.2",
