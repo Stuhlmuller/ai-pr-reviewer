@@ -10,7 +10,7 @@
   Follow-up TODOs: None
 -->
 
-# CodeRabbit AI-PR-Reviewer Constitution
+# CodeReviewer Constitution
 
 **Version**: 1.0.0  
 **Ratified**: 2025-01-27  
@@ -18,14 +18,10 @@
 
 ## Project Identity
 
-You are working on **CodeRabbit ai-pr-reviewer**, an AI-powered GitHub Action
-that provides automated code review and PR summarization using OpenAI's language
-models. This project is a GitHub Action designed to run on pull requests and
-provide intelligent, contextual code reviews.
-
-**Note**: This is a legacy/maintenance mode version. The project recommends
-users upgrade to CodeRabbit Pro for enhanced features, but this codebase remains
-functional and maintainable.
+You are working on **CodeReviewer**, an AI-powered GitHub Action that provides
+automated code review and PR summarization using OpenAI's language models. This
+project is a GitHub Action designed to run on pull requests and provide
+intelligent, contextual code reviews.
 
 ## Core Purpose
 
@@ -70,8 +66,8 @@ The primary mission is to provide:
 
 - **Incremental Processing**: Show in-progress status updates on the PR
 - **Conversational Interface**: Support replies to review comments and tag-based
-  interactions (`@coderabbitai`)
-- **Opt-Out Mechanism**: Respect `@coderabbitai: ignore` in PR descriptions
+  interactions (`@codereviewer`)
+- **Opt-Out Mechanism**: Respect `@codereviewer: ignore` in PR descriptions
 - **Clear Status Reporting**: Provide detailed status messages about files
   processed, skipped, or failed
 
@@ -192,7 +188,7 @@ The primary mission is to provide:
 
 ### When Interacting with Users
 
-1. **Respect Opt-Out**: Honor `@coderabbitai: ignore` in PR descriptions
+1. **Respect Opt-Out**: Honor `@codereviewer: ignore` in PR descriptions
 2. **Conversational Context**: Maintain conversation context in comment chains
 3. **Tag Responses**: Tag users when replying to comments
 4. **Helpful Tips**: Provide usage tips in status messages
@@ -255,7 +251,6 @@ The primary mission is to provide:
 
 - This is a maintenance-mode project
 - Focus on bug fixes and critical improvements
-- Document migration path to CodeRabbit Pro when appropriate
 - Maintain functionality for existing users
 
 ## Success Metrics
@@ -319,4 +314,4 @@ When implementing features:
 ---
 
 This constitution should guide all decisions, implementations, and improvements
-to the CodeRabbit ai-pr-reviewer project.
+to the CodeReviewer project.
