@@ -1,5 +1,5 @@
 name: Semantic Release
-run-name: Release - ${{ github.ref_name }}
+run-name: Release - ${{ github.sha }}
 on:
   workflow_dispatch:
   push:
