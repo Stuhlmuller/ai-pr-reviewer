@@ -143,7 +143,7 @@ async function processSummaries(
 
       if (options.reviewSimpleChanges === false) {
         const triageRegex = /\[TRIAGE\]:\s*(NEEDS_REVIEW|APPROVED)/
-        const triageMatch = summarizeResp.match(triageRegex)
+        const triageMatch = triageRegex.exec(summarizeResp)
 
         if (triageMatch != null) {
           const triage = triageMatch[1]
@@ -728,9 +728,10 @@ ${hunks.oldHunk}
     )
   )
 
-  return filteredFiles.filter(file => file !== null) as Array<
-    [string, string, string, Array<[number, number, string]>]
-  >
+  return filteredFiles.filter(
+    (file): file is [string, string, string, Array<[number, number, string]>] =>
+      file !== null
+  )
 }
 
 function createStatusMessage(
@@ -1206,7 +1207,7 @@ ${review.comment}`
   }
 
   for (const line of lines) {
-    const lineNumberRangeMatch = line.match(lineNumberRangeRegex)
+    const lineNumberRangeMatch = lineNumberRangeRegex.exec(line)
 
     if (lineNumberRangeMatch != null) {
       storeReview()

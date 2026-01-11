@@ -53,12 +53,14 @@ function validateEvent(): boolean {
   return true
 }
 
-function setupInputsFromContext(commenter: Commenter, inputs: Inputs): void {
-  inputs.title = context.payload.pull_request.title
-  if (context.payload.pull_request.body) {
-    inputs.description = commenter.getDescription(
-      context.payload.pull_request.body
-    )
+function setupInputsFromContext(
+  commenter: Commenter,
+  inputs: Inputs,
+  pullRequest: NonNullable<typeof context.payload.pull_request>
+): void {
+  inputs.title = pullRequest.title
+  if (pullRequest.body) {
+    inputs.description = commenter.getDescription(pullRequest.body)
   }
 }
 
@@ -134,9 +136,15 @@ export const handleReviewComment = async (
     return
   }
 
+  // After validateEvent() returns true, we know these are defined
+  const comment = context.payload?.comment
+  const pullRequest = context.payload?.pull_request
+  if (!comment || !pullRequest) {
+    return
+  }
+
   const commenter: Commenter = new Commenter()
   const inputs: Inputs = new Inputs()
-  const comment = context.payload.comment
 
   if (
     comment.body.includes(COMMENT_TAG) ||
@@ -146,9 +154,9 @@ export const handleReviewComment = async (
     return
   }
 
-  setupInputsFromContext(commenter, inputs)
+  setupInputsFromContext(commenter, inputs, pullRequest)
 
-  const pullNumber = context.payload.pull_request.number
+  const pullNumber = pullRequest.number
   inputs.comment = `${comment.user.login}: ${comment.body}`
   inputs.diff = comment.diff_hunk
   inputs.filename = comment.path
@@ -174,8 +182,8 @@ export const handleReviewComment = async (
 
   let fileDiff = await getFileDiff(
     comment.path,
-    context.payload.pull_request.base.sha,
-    context.payload.pull_request.head.sha
+    pullRequest.base.sha,
+    pullRequest.head.sha
   )
 
   if (inputs.diff.length === 0) {

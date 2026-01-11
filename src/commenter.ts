@@ -503,7 +503,7 @@ ${COMMENT_REPLY_TAG}
         existingComments,
         topLevelComment
       )
-      if (chain && chain.includes(tag)) {
+      if (chain?.includes(tag)) {
         chainNum += 1
         allChains += `Conversation Chain ${chainNum}:
 ${chain}
@@ -644,14 +644,14 @@ ${chain}
     try {
       const comments = await this.listComments(target)
       for (const cmt of comments) {
-        if (cmt.body && cmt.body.includes(tag)) {
+        if (cmt.body?.includes(tag)) {
           return cmt
         }
       }
 
       return null
     } catch (e: unknown) {
-      warning(`Failed to find comment with tag: ${e}`)
+      warning(`Failed to find comment with tag: ${String(e)}`)
       return null
     }
   }
@@ -751,7 +751,7 @@ ${chain}
     const allCommits = []
     let page = 1
     let commits
-    if (context && context.payload && context.payload.pull_request != null) {
+    if (context?.payload?.pull_request != null) {
       do {
         commits = await octokit.pulls.listCommits({
           owner: repo.owner,
