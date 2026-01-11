@@ -29,7 +29,7 @@
     {
       "files": ["__tests__/**/*.ts", "**/*.test.ts"],
       "parserOptions": {
-        "project": null
+        "project": "./tsconfig.test.json"
       }
     }
   ]
