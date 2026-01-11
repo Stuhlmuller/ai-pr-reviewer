@@ -1,2 +1,5 @@
 [github_action_config]
-pr_actions = []
+github_action_config.auto_review: "false" # enable\disable auto review
+github_action_config.auto_describe: "false" # enable\disable auto describe
+github_action_config.auto_improve: "false" # enable\disable auto improve
+github_action_config.pr_actions = []
