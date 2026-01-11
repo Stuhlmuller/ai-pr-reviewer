@@ -13,6 +13,7 @@ permissions: {}
 
 jobs:
   dry-run:
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -27,6 +28,7 @@ jobs:
           ci: false
 
   release:
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     permissions:
       contents: write # for creating releases
