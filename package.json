@@ -38,7 +38,9 @@
   },
   "devDependencies": {
     "@jest/globals": "29.7.0",
-    "@types/node": "24.10.4",
+    "@semantic-release/commit-analyzer": "^13.0.1",
+    "@semantic-release/release-notes-generator": "^14.1.0",
+    "@types/node": "20.19.27",
     "@typescript-eslint/eslint-plugin": "5.62.0",
     "@typescript-eslint/parser": "5.62.0",
     "@vercel/ncc": "0.38.4",
