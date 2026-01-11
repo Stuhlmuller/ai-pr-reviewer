@@ -16,8 +16,7 @@ concurrency:
   group:
     ${{ github.repository }}-${{ github.event.number || github.head_ref ||
     github.sha }}-${{ github.workflow }}-${{ github.event_name ==
-    'pull_request_review_comment' && 'pr_comment' || (github.event_name ==
-    'issue_comment' && 'issue_comment') || 'pr' }}
+    'pull_request_review_comment' && 'pr_comment' || 'pr' || 'issue_comment' }}
   cancel-in-progress:
     ${{ github.event_name != 'pull_request_review_comment' && github.event_name
     != 'issue_comment' }}
