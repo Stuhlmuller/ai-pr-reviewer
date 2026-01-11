@@ -1,5 +1,5 @@
 import {expect, describe, test, beforeEach, jest} from '@jest/globals'
-import * as core from '@actions/core'
+import {info} from '@actions/core'
 import {Options, PathFilter, OpenAIOptions} from '../src/options'
 import {TokenLimits} from '../src/limits'
 
@@ -126,11 +126,11 @@ describe('Options', () => {
       options.print()
 
       // Options.print() calls info 19 times
-      expect(core.info).toHaveBeenCalledTimes(19)
-      expect(core.info).toHaveBeenCalledWith('debug: true')
-      expect(core.info).toHaveBeenCalledWith('disable_review: false')
-      expect(core.info).toHaveBeenCalledWith('disable_release_notes: true')
-      expect(core.info).toHaveBeenCalledWith('max_files: 5')
+      expect(info).toHaveBeenCalledTimes(19)
+      expect(info).toHaveBeenCalledWith('debug: true')
+      expect(info).toHaveBeenCalledWith('disable_review: false')
+      expect(info).toHaveBeenCalledWith('disable_release_notes: true')
+      expect(info).toHaveBeenCalledWith('max_files: 5')
     })
   })
 
@@ -139,7 +139,7 @@ describe('Options', () => {
       const options = new Options(false, false, false)
       const result = options.checkPath('src/file.ts')
       expect(result).toBe(true) // default PathFilter returns true
-      expect(core.info).toHaveBeenCalledWith(
+      expect(info).toHaveBeenCalledWith(
         expect.stringContaining('checking path: src/file.ts')
       )
     })
