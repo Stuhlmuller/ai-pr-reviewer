@@ -278,12 +278,9 @@ function appendSummaryStatus(
 
   return `${statusMsg}
 
-<details>
-<summary>Note: Some files could not be processed</summary>
+Note: Some files could not be processed:
 
 ${errors.map(file => `- ${file}`).join('\n')}
-
-</details>
 `
 }
 
@@ -748,7 +745,7 @@ function appendReviewStatus(
   }
 
   if (reviewErrors.length > 0 || reviewResult.reviewsSkipped.length > 0) {
-    statusMsg += '\n\n<details>\n<summary>Note</summary>\n\n'
+    statusMsg += '\n\n'
 
     if (reviewErrors.length > 0) {
       statusMsg += `Some files could not be reviewed:\n\n${reviewErrors
@@ -761,8 +758,6 @@ function appendReviewStatus(
         .map(file => `- ${file}`)
         .join('\n')}\n\n`
     }
-
-    statusMsg += '</details>'
   }
 
   return statusMsg
