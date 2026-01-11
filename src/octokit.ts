@@ -1,5 +1,7 @@
 import {getInput, warning} from '@actions/core'
+// eslint-disable-next-line import/no-unresolved
 import {Octokit} from '@octokit/action'
+// eslint-disable-next-line import/no-unresolved
 import {retry} from '@octokit/plugin-retry'
 // eslint-disable-next-line import/no-unresolved
 import {throttling} from '@octokit/plugin-throttling'
