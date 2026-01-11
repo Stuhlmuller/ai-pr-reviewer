@@ -1,4 +1,4 @@
-import {error, getInput, info, warning} from '@actions/core'
+import {error, info, warning} from '@actions/core'
 // eslint-disable-next-line camelcase
 import {context as github_context} from '@actions/github'
 import pLimit from 'p-limit'
@@ -261,35 +261,26 @@ function appendSummaryStatus(
   skippedFiles: string[],
   summariesFailed: string[]
 ): string {
+  const errors: string[] = []
+  if (skippedFiles.length > 0) {
+    errors.push(...skippedFiles)
+  }
+  if (summariesFailed.length > 0) {
+    errors.push(...summariesFailed)
+  }
+
+  if (errors.length === 0) {
+    return statusMsg
+  }
+
   return `${statusMsg}
-${
-  skippedFiles.length > 0
-    ? `
-<details>
-<summary>Files not processed due to max files limit (${
-        skippedFiles.length
-      })</summary>
 
-* ${skippedFiles.join('\n* ')}
+<details>
+<summary>Note: Some files could not be processed</summary>
+
+${errors.map(file => `- ${file}`).join('\n')}
 
 </details>
-`
-    : ''
-}
-${
-  summariesFailed.length > 0
-    ? `
-<details>
-<summary>Files not summarized due to errors (${
-        summariesFailed.length
-      })</summary>
-
-* ${summariesFailed.join('\n* ')}
-
-</details>
-`
-    : ''
-}
 `
 }
 
@@ -735,48 +726,13 @@ ${hunks.oldHunk}
 }
 
 function createStatusMessage(
-  highestReviewedCommitId: string,
-  filesAndChanges: Array<
+  _highestReviewedCommitId: string,
+  _filesAndChanges: Array<
     [string, string, string, Array<[number, number, string]>]
   >,
-  filterIgnoredFiles: any[]
+  _filterIgnoredFiles: any[]
 ): string {
-  if (context.payload.pull_request == null) {
-    return ''
-  }
-
-  return `<details>
-<summary>Commits</summary>
-Files that changed from the base of the PR and between ${highestReviewedCommitId} and ${
-    context.payload.pull_request.head.sha
-  } commits.
-</details>
-${
-  filesAndChanges.length > 0
-    ? `
-<details>
-<summary>Files selected (${filesAndChanges.length})</summary>
-
-* ${filesAndChanges
-        .map(([filename, , , patches]) => `${filename} (${patches.length})`)
-        .join('\n* ')}
-</details>
-`
-    : ''
-}
-${
-  filterIgnoredFiles.length > 0
-    ? `
-<details>
-<summary>Files ignored due to filter (${filterIgnoredFiles.length})</summary>
-
-* ${filterIgnoredFiles.map(file => file.filename).join('\n* ')}
-
-</details>
-`
-    : ''
-}
-`
+  return ''
 }
 
 export const codeReview = async (
@@ -879,61 +835,29 @@ export const codeReview = async (
       openaiConcurrencyLimit
     )
 
-    statusMsg += `
-${
-  reviewResult.reviewsFailed.length > 0
-    ? `<details>
-<summary>Files not reviewed due to errors (${
-        reviewResult.reviewsFailed.length
-      })</summary>
+    const reviewErrors: string[] = []
+    if (reviewResult.reviewsFailed.length > 0) {
+      reviewErrors.push(...reviewResult.reviewsFailed)
+    }
 
-* ${reviewResult.reviewsFailed.join('\n* ')}
+    if (reviewErrors.length > 0 || reviewResult.reviewsSkipped.length > 0) {
+      statusMsg += '\n\n<details>\n<summary>Note</summary>\n\n'
 
-</details>
-`
-    : ''
-}
-${
-  reviewResult.reviewsSkipped.length > 0
-    ? `<details>
-<summary>Files skipped from review due to trivial changes (${
-        reviewResult.reviewsSkipped.length
-      })</summary>
+      if (reviewErrors.length > 0) {
+        statusMsg += `Some files could not be reviewed:\n\n${reviewErrors
+          .map(file => `- ${file}`)
+          .join('\n')}\n\n`
+      }
 
-* ${reviewResult.reviewsSkipped.join('\n* ')}
+      if (reviewResult.reviewsSkipped.length > 0) {
+        statusMsg += `Some files were skipped (trivial changes):\n\n${reviewResult.reviewsSkipped
+          .map(file => `- ${file}`)
+          .join('\n')}\n\n`
+      }
 
-</details>
-`
-    : ''
-}
-<details>
-<summary>Review comments generated (${
-      reviewResult.reviewCount + reviewResult.lgtmCount
-    })</summary>
+      statusMsg += '</details>'
+    }
 
-* Review: ${reviewResult.reviewCount}
-* LGTM: ${reviewResult.lgtmCount}
-
-</details>
-
----
-
-<details>
-<summary>Tips</summary>
-
-### Chat with ${getInput('bot_icon')} CodeReviewer Bot (\`@codereviewer\`)
-- Reply on review comments left by this bot to ask follow-up questions. A review comment is a comment on a diff or a file.
-- Invite the bot into a review comment chain by tagging \`@codereviewer\` in a reply.
-
-### Code suggestions
-- The bot may make code suggestions, but please review them carefully before committing since the line number ranges may be misaligned. 
-- You can edit the comment made by the bot and manually tweak the suggestion if it is slightly off.
-
-### Pausing incremental reviews
-- Add \`@codereviewer: ignore\` anywhere in the PR description to pause further reviews from the bot.
-
-</details>
-`
     if (context.payload.pull_request != null && commits.length > 0) {
       const existingCommitIdsBlock = commenter.getReviewedCommitIdsBlock(
         existingSummarizeCmtBody

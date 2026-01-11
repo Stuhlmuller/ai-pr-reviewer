@@ -7,7 +7,7 @@ import {octokit} from './octokit'
 const context = github_context
 const repo = context.repo
 
-export const COMMENT_GREETING = `${getInput('bot_icon')}   CodeReviewer`
+export const COMMENT_GREETING = `${getInput('bot_icon')} CodeReviewer`
 
 export const COMMENT_TAG =
   '<!-- This is an auto-generated comment by OSS CodeReviewer -->'
