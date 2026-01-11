@@ -29,7 +29,7 @@
     {
       "files": ["__tests__/**/*.ts", "**/*.test.ts"],
       "parserOptions": {
-        "project": "./tsconfig.json"
+        "project": "./tsconfig.eslint.json"
       }
     }
   ]

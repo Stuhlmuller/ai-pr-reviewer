@@ -98,12 +98,15 @@ async function processSummaries(
   filesAndChanges: Array<
     [string, string, string, Array<[number, number, string]>]
   >,
-  openaiConcurrencyLimit: any,
-  summariesFailed: string[]
+  summaryContext: {
+    openaiConcurrencyLimit: any
+    summariesFailed: string[]
+  }
 ): Promise<{
   summaries: Array<[string, string, boolean]>
   skippedFiles: string[]
 }> {
+  const {openaiConcurrencyLimit, summariesFailed} = summaryContext
   const doSummary = async (
     filename: string,
     fileContent: string,
@@ -293,14 +296,17 @@ async function processReviews(
   filesAndChanges: Array<
     [string, string, string, Array<[number, number, string]>]
   >,
-  summaries: Array<[string, string, boolean]>,
-  openaiConcurrencyLimit: any
+  reviewContext: {
+    summaries: Array<[string, string, boolean]>
+    openaiConcurrencyLimit: any
+  }
 ): Promise<{
   reviewsFailed: string[]
   reviewsSkipped: string[]
   lgtmCount: number
   reviewCount: number
 }> {
+  const {summaries, openaiConcurrencyLimit} = reviewContext
   const filesAndChangesReview = filesAndChanges.filter(([filename]) => {
     const needsReview =
       summaries.find(
@@ -725,14 +731,62 @@ ${hunks.oldHunk}
   )
 }
 
-function createStatusMessage(
-  _highestReviewedCommitId: string,
-  _filesAndChanges: Array<
-    [string, string, string, Array<[number, number, string]>]
-  >,
-  _filterIgnoredFiles: any[]
-): string {
+function createStatusMessage(): string {
   return ''
+}
+
+function appendReviewStatus(
+  statusMsg: string,
+  reviewResult: {
+    reviewsFailed: string[]
+    reviewsSkipped: string[]
+  }
+): string {
+  const reviewErrors: string[] = []
+  if (reviewResult.reviewsFailed.length > 0) {
+    reviewErrors.push(...reviewResult.reviewsFailed)
+  }
+
+  if (reviewErrors.length > 0 || reviewResult.reviewsSkipped.length > 0) {
+    statusMsg += '\n\n<details>\n<summary>Note</summary>\n\n'
+
+    if (reviewErrors.length > 0) {
+      statusMsg += `Some files could not be reviewed:\n\n${reviewErrors
+        .map(file => `- ${file}`)
+        .join('\n')}\n\n`
+    }
+
+    if (reviewResult.reviewsSkipped.length > 0) {
+      statusMsg += `Some files were skipped (trivial changes):\n\n${reviewResult.reviewsSkipped
+        .map(file => `- ${file}`)
+        .join('\n')}\n\n`
+    }
+
+    statusMsg += '</details>'
+  }
+
+  return statusMsg
+}
+
+async function finalizeReviewWithComment(
+  commenter: Commenter,
+  pullNumber: number,
+  commitSha: string,
+  statusMsg: string,
+  summarizeComment: string,
+  existingSummarizeCmtBody: string,
+  headSha: string
+): Promise<void> {
+  const existingCommitIdsBlock = commenter.getReviewedCommitIdsBlock(
+    existingSummarizeCmtBody
+  )
+  await commenter.submitReview(pullNumber, commitSha, statusMsg)
+
+  const finalSummarizeComment = `${summarizeComment}\n${commenter.addReviewedCommitId(
+    existingCommitIdsBlock,
+    headSha
+  )}`
+  await commenter.comment(`${finalSummarizeComment}`, SUMMARIZE_TAG, 'replace')
 }
 
 export const codeReview = async (
@@ -774,7 +828,7 @@ export const codeReview = async (
     return
   }
 
-  const {commits, filterSelectedFiles, filterIgnoredFiles} = diffResult
+  const {commits, filterSelectedFiles} = diffResult
 
   const filesAndChanges = await processFilesForReview(
     filterSelectedFiles,
@@ -786,11 +840,7 @@ export const codeReview = async (
     return
   }
 
-  let statusMsg = createStatusMessage(
-    highestReviewedCommitId,
-    filesAndChanges,
-    filterIgnoredFiles
-  )
+  let statusMsg = createStatusMessage()
 
   // update the existing comment with in progress status
   const inProgressSummarizeCmt = commenter.addInProgressStatus(
@@ -809,8 +859,10 @@ export const codeReview = async (
     prompts,
     options,
     filesAndChanges,
-    openaiConcurrencyLimit,
-    summariesFailed
+    {
+      openaiConcurrencyLimit,
+      summariesFailed
+    }
   )
 
   const summarizeComment = await generateFinalSummaries(
@@ -831,51 +883,23 @@ export const codeReview = async (
       prompts,
       options,
       filesAndChanges,
-      summaries,
-      openaiConcurrencyLimit
+      {
+        summaries,
+        openaiConcurrencyLimit
+      }
     )
 
-    const reviewErrors: string[] = []
-    if (reviewResult.reviewsFailed.length > 0) {
-      reviewErrors.push(...reviewResult.reviewsFailed)
-    }
-
-    if (reviewErrors.length > 0 || reviewResult.reviewsSkipped.length > 0) {
-      statusMsg += '\n\n<details>\n<summary>Note</summary>\n\n'
-
-      if (reviewErrors.length > 0) {
-        statusMsg += `Some files could not be reviewed:\n\n${reviewErrors
-          .map(file => `- ${file}`)
-          .join('\n')}\n\n`
-      }
-
-      if (reviewResult.reviewsSkipped.length > 0) {
-        statusMsg += `Some files were skipped (trivial changes):\n\n${reviewResult.reviewsSkipped
-          .map(file => `- ${file}`)
-          .join('\n')}\n\n`
-      }
-
-      statusMsg += '</details>'
-    }
+    statusMsg = appendReviewStatus(statusMsg, reviewResult)
 
     if (context.payload.pull_request != null && commits.length > 0) {
-      const existingCommitIdsBlock = commenter.getReviewedCommitIdsBlock(
-        existingSummarizeCmtBody
-      )
-      await commenter.submitReview(
+      await finalizeReviewWithComment(
+        commenter,
         context.payload.pull_request.number,
         commits[commits.length - 1].sha,
-        statusMsg
-      )
-
-      const finalSummarizeComment = `${summarizeComment}\n${commenter.addReviewedCommitId(
-        existingCommitIdsBlock,
+        statusMsg,
+        summarizeComment,
+        existingSummarizeCmtBody,
         context.payload.pull_request.head.sha
-      )}`
-      await commenter.comment(
-        `${finalSummarizeComment}`,
-        SUMMARIZE_TAG,
-        'replace'
       )
     }
   } else {
