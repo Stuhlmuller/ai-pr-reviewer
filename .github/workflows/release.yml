@@ -12,6 +12,20 @@ on:
 permissions: {}
 
 jobs:
+  dry-run:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+
+      - name: Semantic Release
+        uses: cycjimmy/semantic-release-action@v4
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          dry_run: true
+          ci: false
+
   release:
     runs-on: ubuntu-latest
     permissions:
@@ -25,5 +39,4 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          dry_run: ${{ github.event_name == 'pull_request'}}
-          ci: ${{ github.event_name != 'pull_request'}}
+          ci: true
