@@ -237,9 +237,7 @@ inputs:
   bot_icon:
     required: false
     description: 'The icon for the bot'
-    default:
-      '<img src="https://avatars.githubusercontent.com/in/347564?s=41"
-      alt="Image description" width="20" height="20">'
+    default: '🔍'
 runs:
   using: 'node16'
   main: 'dist/index.js'
