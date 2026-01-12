@@ -144,6 +144,18 @@ inputs:
     required: false
     description: 'Disable release notes'
     default: 'false'
+  enable_security_scanner:
+    required: false
+    description: 'Enable automatic security vulnerability scanning'
+    default: 'true'
+  enable_performance_analyzer:
+    required: false
+    description: 'Enable automatic performance issue detection'
+    default: 'true'
+  enable_complexity_analyzer:
+    required: false
+    description: 'Enable automatic code complexity analysis'
+    default: 'true'
   openai_base_url:
     required: false
     description: 'The url of the openai api interface.'

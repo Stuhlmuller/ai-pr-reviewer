@@ -126,7 +126,7 @@ describe('Options', () => {
       options.print()
 
       // Options.print() calls info 19 times
-      expect(info).toHaveBeenCalledTimes(19)
+      expect(info).toHaveBeenCalledTimes(22)
       expect(info).toHaveBeenCalledWith('debug: true')
       expect(info).toHaveBeenCalledWith('disable_review: false')
       expect(info).toHaveBeenCalledWith('disable_release_notes: true')
