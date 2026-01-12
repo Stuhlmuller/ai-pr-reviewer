@@ -74,7 +74,13 @@ export class AnthropicProvider implements AIProvider {
 
             return {
               text: textContent.text,
-              conversationId: result.id
+              conversationId: result.id,
+              tokenUsage: {
+                inputTokens: result.usage.input_tokens,
+                outputTokens: result.usage.output_tokens,
+                totalTokens:
+                  result.usage.input_tokens + result.usage.output_tokens
+              }
             }
           } catch (error: unknown) {
             clearTimeout(timeoutId)
