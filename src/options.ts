@@ -22,6 +22,9 @@ export class Options {
   heavyTokenLimits: TokenLimits
   apiBaseUrl: string
   language: string
+  enableSecurityScanner: boolean
+  enablePerformanceAnalyzer: boolean
+  enableComplexityAnalyzer: boolean
 
   constructor(
     debug: boolean,
@@ -40,7 +43,10 @@ export class Options {
     openaiConcurrencyLimit = '6',
     githubConcurrencyLimit = '6',
     apiBaseUrl = 'https://api.openai.com/v1',
-    language = 'en-US'
+    language = 'en-US',
+    enableSecurityScanner = true,
+    enablePerformanceAnalyzer = true,
+    enableComplexityAnalyzer = true
   ) {
     this.debug = debug
     this.disableReview = disableReview
@@ -61,6 +67,9 @@ export class Options {
     this.heavyTokenLimits = new TokenLimits(openaiHeavyModel)
     this.apiBaseUrl = apiBaseUrl
     this.language = language
+    this.enableSecurityScanner = enableSecurityScanner
+    this.enablePerformanceAnalyzer = enablePerformanceAnalyzer
+    this.enableComplexityAnalyzer = enableComplexityAnalyzer
   }
 
   // print all options using core.info
@@ -84,6 +93,9 @@ export class Options {
     info(`review_token_limits: ${this.heavyTokenLimits.string()}`)
     info(`api_base_url: ${this.apiBaseUrl}`)
     info(`language: ${this.language}`)
+    info(`enable_security_scanner: ${this.enableSecurityScanner}`)
+    info(`enable_performance_analyzer: ${this.enablePerformanceAnalyzer}`)
+    info(`enable_complexity_analyzer: ${this.enableComplexityAnalyzer}`)
   }
 
   checkPath(path: string): boolean {

@@ -12,10 +12,13 @@ import {
   SHORT_SUMMARY_START_TAG,
   SUMMARIZE_TAG
 } from './commenter'
+import {ComplexityAnalyzer} from './complexity-analyzer'
 import {Inputs} from './inputs'
 import {octokit} from './octokit'
 import {type Options} from './options'
+import {PerformanceAnalyzer} from './performance-analyzer'
 import {type Prompts} from './prompts'
+import {SecurityScanner} from './security-scanner'
 import {getTokenCount} from './tokenizer'
 
 // eslint-disable-next-line camelcase
@@ -206,6 +209,91 @@ ${filename}: ${summary}
   return {summaries, skippedFiles}
 }
 
+async function analyzeFile(
+  filename: string,
+  fileContent: string,
+  options: Options,
+  scanners: {
+    security: SecurityScanner
+    performance: PerformanceAnalyzer
+    complexity: ComplexityAnalyzer
+  }
+): Promise<{report: string; hasIssues: boolean}> {
+  let fileReport = ''
+  let hasIssues = false
+
+  if (options.enableSecurityScanner) {
+    const result = scanners.security.scanFile(fileContent, filename)
+    if (result.issues.length > 0) {
+      fileReport += scanners.security.generateReport(result)
+      hasIssues = true
+    }
+  }
+
+  if (options.enablePerformanceAnalyzer) {
+    const result = scanners.performance.analyzeFile(fileContent, filename)
+    if (result.issues.length > 0) {
+      fileReport += `\n${scanners.performance.generateReport(result)}`
+      hasIssues = true
+    }
+  }
+
+  if (options.enableComplexityAnalyzer) {
+    const result = await scanners.complexity.analyzeFile(filename, fileContent)
+    if (result.issues.length > 0) {
+      fileReport += `\n${scanners.complexity.formatReportAsMarkdown(
+        result,
+        filename
+      )}`
+      hasIssues = true
+    }
+  }
+
+  return {report: fileReport, hasIssues}
+}
+
+async function runAnalyzers(
+  options: Options,
+  filesAndChanges: Array<
+    [string, string, string, Array<[number, number, string]>]
+  >
+): Promise<string> {
+  if (
+    !options.enableSecurityScanner &&
+    !options.enablePerformanceAnalyzer &&
+    !options.enableComplexityAnalyzer
+  ) {
+    return ''
+  }
+
+  const scanners = {
+    security: new SecurityScanner(),
+    performance: new PerformanceAnalyzer(),
+    complexity: new ComplexityAnalyzer()
+  }
+
+  let analyzerReport = '\n\n## 🔍 Automated Analysis Results\n\n'
+  let hasAnyIssues = false
+
+  for (const [filename, fileContent] of filesAndChanges) {
+    const {report, hasIssues} = await analyzeFile(
+      filename,
+      fileContent,
+      options,
+      scanners
+    )
+
+    if (hasIssues) {
+      analyzerReport += `### File: \`${filename}\`\n\n${report}\n`
+      hasAnyIssues = true
+    }
+  }
+
+  return hasAnyIssues
+    ? analyzerReport
+    : '\n\n## 🔍 Automated Analysis Results\n\n✅ No security, performance, or complexity issues detected.\n'
+}
+
 async function generateFinalSummaries(
   heavyBot: Bot,
   commenter: Commenter,
@@ -249,7 +337,14 @@ async function generateFinalSummaries(
   )
   inputs.shortSummary = summarizeShortResponse
 
-  return `${summarizeFinalResponse}
+  let finalComment = `${summarizeFinalResponse}`
+
+  // Append analyzer results if available
+  if (inputs.analyzerResults) {
+    finalComment += inputs.analyzerResults
+  }
+
+  return `${finalComment}
 ${RAW_SUMMARY_START_TAG}
 ${inputs.rawSummary}
 ${RAW_SUMMARY_END_TAG}
@@ -859,6 +954,12 @@ export const codeReview = async (
       summariesFailed
     }
   )
+
+  // Run automated analyzers
+  const analyzerResults = await runAnalyzers(options, filesAndChanges)
+  if (analyzerResults) {
+    inputs.analyzerResults = analyzerResults
+  }
 
   const summarizeComment = await generateFinalSummaries(
     heavyBot,
