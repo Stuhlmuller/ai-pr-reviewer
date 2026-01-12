@@ -19,6 +19,7 @@ import {type Options} from './options'
 import {PerformanceAnalyzer} from './performance-analyzer'
 import {type Prompts} from './prompts'
 import {SecurityScanner} from './security-scanner'
+import {createSkipAnalyzer, type SkipConfig} from './skip-logic'
 import {getTokenCount} from './tokenizer'
 
 // eslint-disable-next-line camelcase
@@ -90,6 +91,57 @@ function filterFilesByPath(
   }
 
   return {selected, ignored}
+}
+
+/**
+ * Apply smart review skipping logic to filter out files that don't need AI review
+ */
+function applySmartSkipping(
+  files: any[],
+  options: Options
+): {selected: any[]; skipped: any[]; skipReasons: Map<string, string>} {
+  const skipConfig: SkipConfig = {
+    skipGeneratedFiles: options.smartReviewSkipGenerated,
+    skipTrivialChanges: options.smartReviewSkipTrivial,
+    skipBuildArtifacts: options.smartReviewSkipBuildArtifacts,
+    skipLockfiles: options.smartReviewSkipGenerated, // Lockfiles are part of generated
+    skipVendorCode: options.smartReviewSkipVendor,
+    skipTestSnapshots: options.smartReviewSkipSnapshots,
+    customSkipPatterns: options.smartReviewCustomPatterns,
+    minChangedLinesForReview: options.smartReviewMinLines
+  }
+
+  const skipAnalyzer = createSkipAnalyzer(skipConfig)
+  const selected: any[] = []
+  const skipped: any[] = []
+  const skipReasons = new Map<string, string>()
+
+  for (const file of files) {
+    // Get file diff for analysis
+    const fileDiff = file.patch ?? ''
+
+    // Evaluate if file should be skipped
+    const evaluation = skipAnalyzer.evaluateFile(
+      file.filename,
+      fileDiff,
+      undefined // fileContent not available at this stage
+    )
+
+    if (evaluation.shouldSkip) {
+      skipAnalyzer.logSkip(file.filename, evaluation)
+      skipped.push(file)
+      skipReasons.set(
+        file.filename,
+        `${evaluation.reason} (${(evaluation.confidence * 100).toFixed(
+          0
+        )}% confidence)`
+      )
+    } else {
+      selected.push(file)
+    }
+  }
+
+  return {selected, skipped, skipReasons}
 }
 
 async function processSummaries(
@@ -920,8 +972,27 @@ export const codeReview = async (
 
   const {commits, filterSelectedFiles} = diffResult
 
+  // Apply smart review skipping
+  const {
+    selected: smartSelectedFiles,
+    skipped: smartSkippedFiles,
+    skipReasons
+  } = applySmartSkipping(filterSelectedFiles, options)
+
+  info(
+    `Smart skipping: ${smartSkippedFiles.length} files skipped, ${smartSelectedFiles.length} files selected for review`
+  )
+
+  if (smartSkippedFiles.length > 0) {
+    info('Skipped files:')
+    for (const file of smartSkippedFiles) {
+      const reason = skipReasons.get(file.filename) || 'unknown reason'
+      info(`  - ${file.filename}: ${reason}`)
+    }
+  }
+
   const filesAndChanges = await processFilesForReview(
-    filterSelectedFiles,
+    smartSelectedFiles,
     githubConcurrencyLimit
   )
 

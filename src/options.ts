@@ -25,6 +25,13 @@ export class Options {
   enableSecurityScanner: boolean
   enablePerformanceAnalyzer: boolean
   enableComplexityAnalyzer: boolean
+  smartReviewSkipGenerated: boolean
+  smartReviewSkipTrivial: boolean
+  smartReviewSkipBuildArtifacts: boolean
+  smartReviewSkipVendor: boolean
+  smartReviewSkipSnapshots: boolean
+  smartReviewCustomPatterns: string[]
+  smartReviewMinLines: number
 
   constructor(
     debug: boolean,
@@ -46,7 +53,14 @@ export class Options {
     language = 'en-US',
     enableSecurityScanner = true,
     enablePerformanceAnalyzer = true,
-    enableComplexityAnalyzer = true
+    enableComplexityAnalyzer = true,
+    smartReviewSkipGenerated = true,
+    smartReviewSkipTrivial = true,
+    smartReviewSkipBuildArtifacts = true,
+    smartReviewSkipVendor = true,
+    smartReviewSkipSnapshots = true,
+    smartReviewCustomPatterns: string[] | null = null,
+    smartReviewMinLines = '3'
   ) {
     this.debug = debug
     this.disableReview = disableReview
@@ -70,6 +84,13 @@ export class Options {
     this.enableSecurityScanner = enableSecurityScanner
     this.enablePerformanceAnalyzer = enablePerformanceAnalyzer
     this.enableComplexityAnalyzer = enableComplexityAnalyzer
+    this.smartReviewSkipGenerated = smartReviewSkipGenerated
+    this.smartReviewSkipTrivial = smartReviewSkipTrivial
+    this.smartReviewSkipBuildArtifacts = smartReviewSkipBuildArtifacts
+    this.smartReviewSkipVendor = smartReviewSkipVendor
+    this.smartReviewSkipSnapshots = smartReviewSkipSnapshots
+    this.smartReviewCustomPatterns = smartReviewCustomPatterns || []
+    this.smartReviewMinLines = parseInt(smartReviewMinLines)
   }
 
   // print all options using core.info
@@ -96,6 +117,19 @@ export class Options {
     info(`enable_security_scanner: ${this.enableSecurityScanner}`)
     info(`enable_performance_analyzer: ${this.enablePerformanceAnalyzer}`)
     info(`enable_complexity_analyzer: ${this.enableComplexityAnalyzer}`)
+    info(`smart_review_skip_generated: ${this.smartReviewSkipGenerated}`)
+    info(`smart_review_skip_trivial: ${this.smartReviewSkipTrivial}`)
+    info(
+      `smart_review_skip_build_artifacts: ${this.smartReviewSkipBuildArtifacts}`
+    )
+    info(`smart_review_skip_vendor: ${this.smartReviewSkipVendor}`)
+    info(`smart_review_skip_snapshots: ${this.smartReviewSkipSnapshots}`)
+    info(
+      `smart_review_custom_patterns: ${this.smartReviewCustomPatterns.join(
+        ', '
+      )}`
+    )
+    info(`smart_review_min_lines: ${this.smartReviewMinLines}`)
   }
 
   checkPath(path: string): boolean {
