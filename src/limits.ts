@@ -9,11 +9,11 @@ export class TokenLimits {
     this.knowledgeCutOff = '2024-10-01'
 
     // GPT-4o models (latest and most capable)
-    if (model === 'gpt-4o' || model === 'chatgpt-4o-latest') {
-      this.maxTokens = 128000
-      this.responseTokens = 16384
-      this.knowledgeCutOff = '2024-10-01'
-    } else if (model === 'gpt-4o-mini') {
+    if (
+      model === 'gpt-4o' ||
+      model === 'chatgpt-4o-latest' ||
+      model === 'gpt-4o-mini'
+    ) {
       this.maxTokens = 128000
       this.responseTokens = 16384
       this.knowledgeCutOff = '2024-10-01'
@@ -28,20 +28,13 @@ export class TokenLimits {
       this.responseTokens = 65536
       this.knowledgeCutOff = '2024-10-01'
     }
-    // GPT-4 Turbo models
+    // GPT-4 Turbo models (including vision variants)
     else if (
       model === 'gpt-4-turbo' ||
       model === 'gpt-4-turbo-2024-04-09' ||
       model === 'gpt-4-turbo-preview' ||
       model === 'gpt-4-0125-preview' ||
-      model === 'gpt-4-1106-preview'
-    ) {
-      this.maxTokens = 128000
-      this.responseTokens = 4096
-      this.knowledgeCutOff = '2024-04-01'
-    }
-    // GPT-4 Vision
-    else if (
+      model === 'gpt-4-1106-preview' ||
       model === 'gpt-4-turbo-vision-preview' ||
       model === 'gpt-4-vision-preview' ||
       model === 'gpt-4-1106-vision-preview'
