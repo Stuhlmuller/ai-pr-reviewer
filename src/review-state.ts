@@ -176,7 +176,7 @@ export function updatePhase(
 export function recordError(
   state: ReviewState,
   error: string,
-  type: ReviewState['lastError']['type']
+  type: 'rate_limit' | 'timeout' | 'network' | 'api_error' | 'unknown'
 ): ReviewState {
   return {
     ...state,
@@ -219,7 +219,7 @@ export function deserializeState(json: string): ReviewState | null {
     }
 
     return state
-  } catch (e) {
+  } catch {
     return null
   }
 }
@@ -314,7 +314,9 @@ export function isSameReview(
 /**
  * Classifies an error into a specific error type for better handling
  */
-export function classifyError(error: any): ReviewState['lastError']['type'] {
+export function classifyError(
+  error: any
+): 'rate_limit' | 'timeout' | 'network' | 'api_error' | 'unknown' {
   const errorStr = String(error).toLowerCase()
 
   if (errorStr.includes('rate limit') || errorStr.includes('429')) {

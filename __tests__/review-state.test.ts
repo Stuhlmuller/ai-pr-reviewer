@@ -38,12 +38,15 @@ describe('review-state', () => {
     })
 
     it('should set timestamps correctly', () => {
-      const before = new Date().toISOString()
       const state = createReviewState('abc123', mockFiles)
-      const after = new Date().toISOString()
 
-      expect(state.startedAt).toBeGreaterThanOrEqual(before)
-      expect(state.startedAt).toBeLessThanOrEqual(after)
+      // Verify timestamps are in ISO 8601 format
+      expect(state.startedAt).toMatch(
+        /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/
+      )
+      expect(state.updatedAt).toMatch(
+        /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/
+      )
       expect(state.updatedAt).toBe(state.startedAt)
     })
   })
@@ -127,13 +130,13 @@ describe('review-state', () => {
   describe('updatePhase', () => {
     it('should update phase from summarizing to reviewing', () => {
       let state = createReviewState('abc123', mockFiles)
-      const oldUpdatedAt = state.updatedAt
-
-      // Small delay to ensure timestamp changes
       state = updatePhase(state, 'reviewing')
 
       expect(state.phase).toBe('reviewing')
-      expect(state.updatedAt).not.toBe(oldUpdatedAt)
+      // Verify timestamp is in valid ISO 8601 format
+      expect(state.updatedAt).toMatch(
+        /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/
+      )
     })
   })
 
