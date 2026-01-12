@@ -63,7 +63,7 @@ IMPORTANT: Entire response must be in the language with ISO code: ${options.lang
       return res
     } catch (e: unknown) {
       if (e instanceof ChatGPTError) {
-        warning(`Failed to chat: ${e}, backtrace: ${e.stack}`)
+        warning(`Failed to chat: ${e.message}, backtrace: ${e.stack}`)
       }
       return res
     }
@@ -95,7 +95,11 @@ IMPORTANT: Entire response must be in the language with ISO code: ${options.lang
       } catch (e: unknown) {
         if (e instanceof ChatGPTError) {
           info(
-            `response: ${response}, failed to send message to openai: ${e}, backtrace: ${e.stack}`
+            `response: ${JSON.stringify(
+              response
+            )}, failed to send message to openai: ${e.message}, backtrace: ${
+              e.stack
+            }`
           )
         }
       }
