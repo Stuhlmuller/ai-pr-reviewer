@@ -68,116 +68,175 @@ export class ComplexityAnalyzer {
     content: string
   ): Promise<ComplexityReport> {
     const functions = this.extractFunctions(content)
-    const issues: ComplexityIssue[] = []
+    const issues = this.collectIssuesFromFunctions(functions)
+    const complexFunctions = this.countComplexFunctions(functions)
+    const avgComplexity = this.calculateAverageComplexity(functions)
 
-    for (const func of functions) {
-      // Check cyclomatic complexity
-      if (func.cyclomaticComplexity > this.CYCLOMATIC_THRESHOLD_MODERATE) {
-        issues.push({
-          type: 'cyclomatic',
-          severity:
-            func.cyclomaticComplexity > this.CYCLOMATIC_THRESHOLD_HIGH
-              ? 'high'
-              : 'medium',
-          line: func.startLine,
-          endLine: func.endLine,
-          functionName: func.name,
-          message: `Cyclomatic complexity is ${func.cyclomaticComplexity} (threshold: ${this.CYCLOMATIC_THRESHOLD_MODERATE})`,
-          score: func.cyclomaticComplexity,
-          recommendation: this.getComplexityRecommendation(
-            'cyclomatic',
-            func.cyclomaticComplexity
-          )
-        })
-      }
-
-      // Check cognitive complexity
-      if (func.cognitiveComplexity > this.COGNITIVE_THRESHOLD_MODERATE) {
-        issues.push({
-          type: 'cognitive',
-          severity:
-            func.cognitiveComplexity > this.COGNITIVE_THRESHOLD_HIGH
-              ? 'high'
-              : 'medium',
-          line: func.startLine,
-          endLine: func.endLine,
-          functionName: func.name,
-          message: `Cognitive complexity is ${func.cognitiveComplexity} (threshold: ${this.COGNITIVE_THRESHOLD_MODERATE})`,
-          score: func.cognitiveComplexity,
-          recommendation: this.getComplexityRecommendation(
-            'cognitive',
-            func.cognitiveComplexity
-          )
-        })
-      }
-
-      // Check function length
-      if (func.lines > this.LENGTH_THRESHOLD_MODERATE) {
-        issues.push({
-          type: 'function_length',
-          severity: func.lines > this.LENGTH_THRESHOLD_HIGH ? 'high' : 'medium',
-          line: func.startLine,
-          endLine: func.endLine,
-          functionName: func.name,
-          message: `Function is ${func.lines} lines long (threshold: ${this.LENGTH_THRESHOLD_MODERATE})`,
-          score: func.lines,
-          recommendation:
-            'Consider breaking this function into smaller, focused functions with single responsibilities'
-        })
-      }
-
-      // Check nesting depth
-      if (func.maxNesting > this.NESTING_THRESHOLD) {
-        issues.push({
-          type: 'nesting',
-          severity: 'medium',
-          line: func.startLine,
-          endLine: func.endLine,
-          functionName: func.name,
-          message: `Maximum nesting depth is ${func.maxNesting} (threshold: ${this.NESTING_THRESHOLD})`,
-          score: func.maxNesting,
-          recommendation:
-            'Reduce nesting by using early returns, extracting nested logic into separate functions, or using guard clauses'
-        })
-      }
-
-      // Check parameter count
-      if (func.parameters > this.PARAMETER_THRESHOLD) {
-        issues.push({
-          type: 'parameters',
-          severity: 'low',
-          line: func.startLine,
-          functionName: func.name,
-          message: `Function has ${func.parameters} parameters (threshold: ${this.PARAMETER_THRESHOLD})`,
-          score: func.parameters,
-          recommendation:
-            'Consider grouping related parameters into an options object or splitting the function'
-        })
-      }
-    }
-
-    const complexFunctions = functions.filter(
-      f =>
-        f.cyclomaticComplexity > this.CYCLOMATIC_THRESHOLD_MODERATE ||
-        f.cognitiveComplexity > this.COGNITIVE_THRESHOLD_MODERATE
-    ).length
-
-    const avgComplexity =
-      functions.length > 0
-        ? functions.reduce((sum, f) => sum + f.cyclomaticComplexity, 0) /
-          functions.length
-        : 0
+    const sortedIssues = this.sortIssuesBySeverity(issues)
 
     return {
-      issues: issues.sort((a, b) => {
-        const severityOrder = {high: 0, medium: 1, low: 2}
-        return severityOrder[a.severity] - severityOrder[b.severity]
-      }),
+      issues: sortedIssues,
       summary: this.generateSummary(functions.length, complexFunctions, issues),
       totalFunctions: functions.length,
       complexFunctions,
       averageComplexity: Math.round(avgComplexity * 10) / 10
     }
+  }
+
+  private collectIssuesFromFunctions(
+    functions: FunctionInfo[]
+  ): ComplexityIssue[] {
+    const issues: ComplexityIssue[] = []
+
+    for (const func of functions) {
+      this.checkCyclomaticComplexity(func, issues)
+      this.checkCognitiveComplexity(func, issues)
+      this.checkFunctionLength(func, issues)
+      this.checkNestingDepth(func, issues)
+      this.checkParameterCount(func, issues)
+    }
+
+    return issues
+  }
+
+  private checkCyclomaticComplexity(
+    func: FunctionInfo,
+    issues: ComplexityIssue[]
+  ): void {
+    if (func.cyclomaticComplexity <= this.CYCLOMATIC_THRESHOLD_MODERATE) {
+      return
+    }
+
+    issues.push({
+      type: 'cyclomatic',
+      severity:
+        func.cyclomaticComplexity > this.CYCLOMATIC_THRESHOLD_HIGH
+          ? 'high'
+          : 'medium',
+      line: func.startLine,
+      endLine: func.endLine,
+      functionName: func.name,
+      message: `Cyclomatic complexity is ${func.cyclomaticComplexity} (threshold: ${this.CYCLOMATIC_THRESHOLD_MODERATE})`,
+      score: func.cyclomaticComplexity,
+      recommendation: this.getComplexityRecommendation(
+        'cyclomatic',
+        func.cyclomaticComplexity
+      )
+    })
+  }
+
+  private checkCognitiveComplexity(
+    func: FunctionInfo,
+    issues: ComplexityIssue[]
+  ): void {
+    if (func.cognitiveComplexity <= this.COGNITIVE_THRESHOLD_MODERATE) {
+      return
+    }
+
+    issues.push({
+      type: 'cognitive',
+      severity:
+        func.cognitiveComplexity > this.COGNITIVE_THRESHOLD_HIGH
+          ? 'high'
+          : 'medium',
+      line: func.startLine,
+      endLine: func.endLine,
+      functionName: func.name,
+      message: `Cognitive complexity is ${func.cognitiveComplexity} (threshold: ${this.COGNITIVE_THRESHOLD_MODERATE})`,
+      score: func.cognitiveComplexity,
+      recommendation: this.getComplexityRecommendation(
+        'cognitive',
+        func.cognitiveComplexity
+      )
+    })
+  }
+
+  private checkFunctionLength(
+    func: FunctionInfo,
+    issues: ComplexityIssue[]
+  ): void {
+    if (func.lines <= this.LENGTH_THRESHOLD_MODERATE) {
+      return
+    }
+
+    issues.push({
+      type: 'function_length',
+      severity: func.lines > this.LENGTH_THRESHOLD_HIGH ? 'high' : 'medium',
+      line: func.startLine,
+      endLine: func.endLine,
+      functionName: func.name,
+      message: `Function is ${func.lines} lines long (threshold: ${this.LENGTH_THRESHOLD_MODERATE})`,
+      score: func.lines,
+      recommendation:
+        'Consider breaking this function into smaller, focused functions with single responsibilities'
+    })
+  }
+
+  private checkNestingDepth(
+    func: FunctionInfo,
+    issues: ComplexityIssue[]
+  ): void {
+    if (func.maxNesting <= this.NESTING_THRESHOLD) {
+      return
+    }
+
+    issues.push({
+      type: 'nesting',
+      severity: 'medium',
+      line: func.startLine,
+      endLine: func.endLine,
+      functionName: func.name,
+      message: `Maximum nesting depth is ${func.maxNesting} (threshold: ${this.NESTING_THRESHOLD})`,
+      score: func.maxNesting,
+      recommendation:
+        'Reduce nesting by using early returns, extracting nested logic into separate functions, or using guard clauses'
+    })
+  }
+
+  private checkParameterCount(
+    func: FunctionInfo,
+    issues: ComplexityIssue[]
+  ): void {
+    if (func.parameters <= this.PARAMETER_THRESHOLD) {
+      return
+    }
+
+    issues.push({
+      type: 'parameters',
+      severity: 'low',
+      line: func.startLine,
+      functionName: func.name,
+      message: `Function has ${func.parameters} parameters (threshold: ${this.PARAMETER_THRESHOLD})`,
+      score: func.parameters,
+      recommendation:
+        'Consider grouping related parameters into an options object or splitting the function'
+    })
+  }
+
+  private countComplexFunctions(functions: FunctionInfo[]): number {
+    return functions.filter(
+      f =>
+        f.cyclomaticComplexity > this.CYCLOMATIC_THRESHOLD_MODERATE ||
+        f.cognitiveComplexity > this.COGNITIVE_THRESHOLD_MODERATE
+    ).length
+  }
+
+  private calculateAverageComplexity(functions: FunctionInfo[]): number {
+    if (functions.length === 0) {
+      return 0
+    }
+
+    return (
+      functions.reduce((sum, f) => sum + f.cyclomaticComplexity, 0) /
+      functions.length
+    )
+  }
+
+  private sortIssuesBySeverity(issues: ComplexityIssue[]): ComplexityIssue[] {
+    const severityOrder = {high: 0, medium: 1, low: 2}
+    return [...issues].sort((a, b) => {
+      return severityOrder[a.severity] - severityOrder[b.severity]
+    })
   }
 
   /**
@@ -186,18 +245,7 @@ export class ComplexityAnalyzer {
   private extractFunctions(content: string): FunctionInfo[] {
     const functions: FunctionInfo[] = []
     const lines = content.split('\n')
-
-    // Regex patterns for different function declarations
-    const patterns = [
-      // Regular functions: function name(...) or function* name(...)
-      /^\s*(?:export\s+)?(?:async\s+)?function\s*\*?\s+(\w+)\s*\(([^)]*)\)/,
-      // Arrow functions: const name = (...) => or const name = async (...) =>
-      /^\s*(?:export\s+)?(?:const|let|var)\s+(\w+)\s*=\s*(?:async\s*)?\(([^)]*)\)\s*=>/,
-      // Method definitions: name(...) { or async name(...) {
-      /^\s*(?:async\s+)?(\w+)\s*\(([^)]*)\)\s*[:{]/,
-      // Class methods: public/private/protected name(...) {
-      /^\s*(?:public|private|protected|static)?\s*(?:async\s+)?(\w+)\s*\(([^)]*)\)\s*[:{]/
-    ]
+    const patterns = this.getFunctionPatterns()
 
     let currentFunction: {
       name: string
@@ -211,63 +259,111 @@ export class ComplexityAnalyzer {
       const line = lines[i]
       const lineNum = i + 1
 
-      // Track brace depth for the entire file
-      const openBraces = (line.match(/{/g) || []).length
-      const closeBraces = (line.match(/}/g) || []).length
-      braceDepth += openBraces - closeBraces
+      braceDepth = this.updateBraceDepth(line, braceDepth)
 
-      // Try to match function declarations
       if (!currentFunction) {
-        for (const pattern of patterns) {
-          const match = line.match(pattern)
-          if (match) {
-            const funcName = match[1]
-            const params = match[2]
-            const paramCount = params
-              ? params.split(',').filter(p => p.trim()).length
-              : 0
-
-            currentFunction = {
-              name: funcName,
-              startLine: lineNum,
-              parameters: paramCount,
-              braceDepth: braceDepth
-            }
-            break
-          }
-        }
-      }
-
-      // If we're in a function and back to starting depth, function ended
-      if (
-        currentFunction &&
-        braceDepth === currentFunction.braceDepth - 1 &&
-        closeBraces > 0
-      ) {
-        const endLine = lineNum
-        const functionLines = lines.slice(
-          currentFunction.startLine - 1,
-          endLine
+        currentFunction = this.tryMatchFunctionDeclaration(
+          line,
+          lineNum,
+          braceDepth,
+          patterns
         )
-        const functionBody = functionLines.join('\n')
-
-        functions.push({
-          name: currentFunction.name,
-          startLine: currentFunction.startLine,
-          endLine: endLine,
-          cyclomaticComplexity:
-            this.calculateCyclomaticComplexity(functionBody),
-          cognitiveComplexity: this.calculateCognitiveComplexity(functionBody),
-          lines: functionLines.length,
-          parameters: currentFunction.parameters,
-          maxNesting: this.calculateMaxNesting(functionBody)
-        })
-
+      } else if (this.isFunctionEnd(currentFunction, braceDepth, line)) {
+        this.completeFunctionExtraction(
+          currentFunction,
+          lineNum,
+          lines,
+          functions
+        )
         currentFunction = null
       }
     }
 
     return functions
+  }
+
+  private getFunctionPatterns(): RegExp[] {
+    return [
+      // Regular functions: function name(...) or function* name(...)
+      /^\s*(?:export\s+)?(?:async\s+)?function\s*\*?\s+(\w+)\s*\(([^)]*)\)/,
+      // Arrow functions: const name = (...) => or const name = async (...) =>
+      /^\s*(?:export\s+)?(?:const|let|var)\s+(\w+)\s*=\s*(?:async\s*)?\(([^)]*)\)\s*=>/,
+      // Method definitions: name(...) { or async name(...) {
+      /^\s*(?:async\s+)?(\w+)\s*\(([^)]*)\)\s*[:{]/,
+      // Class methods: public/private/protected name(...) {
+      /^\s*(?:public|private|protected|static)?\s*(?:async\s+)?(\w+)\s*\(([^)]*)\)\s*[:{]/
+    ]
+  }
+
+  private updateBraceDepth(line: string, currentDepth: number): number {
+    const openBraces = (line.match(/{/g) || []).length
+    const closeBraces = (line.match(/}/g) || []).length
+    return currentDepth + openBraces - closeBraces
+  }
+
+  private tryMatchFunctionDeclaration(
+    line: string,
+    lineNum: number,
+    braceDepth: number,
+    patterns: RegExp[]
+  ): {
+    name: string
+    startLine: number
+    parameters: number
+    braceDepth: number
+  } | null {
+    for (const pattern of patterns) {
+      const execResult = pattern.exec(line)
+      if (execResult) {
+        const funcName = execResult[1]
+        const params = execResult[2]
+        const paramCount = params
+          ? params.split(',').filter(p => p.trim()).length
+          : 0
+
+        return {
+          name: funcName,
+          startLine: lineNum,
+          parameters: paramCount,
+          braceDepth: braceDepth
+        }
+      }
+    }
+    return null
+  }
+
+  private isFunctionEnd(
+    currentFunction: {braceDepth: number},
+    braceDepth: number,
+    line: string
+  ): boolean {
+    const closeBraces = (line.match(/}/g) || []).length
+    return braceDepth === currentFunction.braceDepth - 1 && closeBraces > 0
+  }
+
+  private completeFunctionExtraction(
+    currentFunction: {
+      name: string
+      startLine: number
+      parameters: number
+    },
+    endLine: number,
+    lines: string[],
+    functions: FunctionInfo[]
+  ): void {
+    const functionLines = lines.slice(currentFunction.startLine - 1, endLine)
+    const functionBody = functionLines.join('\n')
+
+    functions.push({
+      name: currentFunction.name,
+      startLine: currentFunction.startLine,
+      endLine: endLine,
+      cyclomaticComplexity: this.calculateCyclomaticComplexity(functionBody),
+      cognitiveComplexity: this.calculateCognitiveComplexity(functionBody),
+      lines: functionLines.length,
+      parameters: currentFunction.parameters,
+      maxNesting: this.calculateMaxNesting(functionBody)
+    })
   }
 
   /**
@@ -310,42 +406,58 @@ export class ComplexityAnalyzer {
     for (const line of lines) {
       const trimmed = line.trim()
 
-      // Increase nesting for opening braces
       if (trimmed.includes('{')) {
         nestingLevel++
       }
 
-      // Structural complexity with nesting multiplier
-      if (
-        /\b(if|for|while|switch|catch)\b/.test(trimmed) &&
-        !trimmed.startsWith('//')
-      ) {
-        complexity += 1 + nestingLevel
-      }
+      complexity += this.calculateLineComplexity(trimmed, nestingLevel)
 
-      // Else/else if adds complexity
-      if (/\belse\s+(if\s*\()?/.test(trimmed)) {
-        complexity += 1
-      }
-
-      // Nested ternary operators
-      if (/\?.*:/.test(trimmed)) {
-        complexity += nestingLevel > 0 ? nestingLevel + 1 : 1
-      }
-
-      // Logical operators in conditions
-      const logicalOps = (trimmed.match(/&&|\|\|/g) || []).length
-      if (logicalOps > 0) {
-        complexity += logicalOps
-      }
-
-      // Decrease nesting for closing braces
       if (trimmed.includes('}')) {
         nestingLevel = Math.max(0, nestingLevel - 1)
       }
     }
 
     return complexity
+  }
+
+  private calculateLineComplexity(line: string, nestingLevel: number): number {
+    let complexity = 0
+
+    if (this.isStructuralComplexity(line)) {
+      complexity += 1 + nestingLevel
+    }
+
+    if (this.isElseStatement(line)) {
+      complexity += 1
+    }
+
+    if (this.hasTernaryOperator(line)) {
+      complexity += nestingLevel > 0 ? nestingLevel + 1 : 1
+    }
+
+    const logicalOps = this.countLogicalOperators(line)
+    complexity += logicalOps
+
+    return complexity
+  }
+
+  private isStructuralComplexity(line: string): boolean {
+    return (
+      /\b(if|for|while|switch|catch)\b/.test(line) && !line.startsWith('//')
+    )
+  }
+
+  private isElseStatement(line: string): boolean {
+    return /\belse\s+(if\s*\()?/.test(line)
+  }
+
+  private hasTernaryOperator(line: string): boolean {
+    return /\?.*:/.test(line)
+  }
+
+  private countLogicalOperators(line: string): number {
+    const matches = line.match(/&&|\|\|/g)
+    return matches ? matches.length : 0
   }
 
   /**
@@ -375,19 +487,26 @@ export class ComplexityAnalyzer {
     score: number
   ): string {
     if (type === 'cyclomatic') {
-      if (score > 20) {
-        return 'This function is very complex. Consider breaking it down into smaller functions, each handling a single responsibility. Extract complex conditions into well-named helper functions.'
-      } else {
-        return 'Refactor this function by extracting some logic into separate functions. Look for opportunities to simplify conditional logic or use early returns.'
-      }
-    } else {
-      // cognitive
-      if (score > 30) {
-        return 'This code is difficult to understand. Reduce nesting depth by using guard clauses and early returns. Extract nested blocks into named functions that clearly express intent.'
-      } else {
-        return 'Simplify the logic flow by reducing nesting levels. Consider using guard clauses, extracting nested blocks into functions, or simplifying conditional expressions.'
-      }
+      return this.getCyclomaticRecommendation(score)
     }
+
+    return this.getCognitiveRecommendation(score)
+  }
+
+  private getCyclomaticRecommendation(score: number): string {
+    if (score > 20) {
+      return 'This function is very complex. Consider breaking it down into smaller functions, each handling a single responsibility. Extract complex conditions into well-named helper functions.'
+    }
+
+    return 'Refactor this function by extracting some logic into separate functions. Look for opportunities to simplify conditional logic or use early returns.'
+  }
+
+  private getCognitiveRecommendation(score: number): string {
+    if (score > 30) {
+      return 'This code is difficult to understand. Reduce nesting depth by using guard clauses and early returns. Extract nested blocks into named functions that clearly express intent.'
+    }
+
+    return 'Simplify the logic flow by reducing nesting levels. Consider using guard clauses, extracting nested blocks into functions, or simplifying conditional expressions.'
   }
 
   /**
@@ -442,10 +561,9 @@ export class ComplexityAnalyzer {
     const issuesByType = new Map<string, ComplexityIssue[]>()
     for (const issue of report.issues) {
       const key = issue.type
-      if (!issuesByType.has(key)) {
-        issuesByType.set(key, [])
-      }
-      issuesByType.get(key)!.push(issue)
+      const existingIssues = issuesByType.get(key) || []
+      existingIssues.push(issue)
+      issuesByType.set(key, existingIssues)
     }
 
     for (const [type, issues] of issuesByType) {
