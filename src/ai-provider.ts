@@ -32,7 +32,7 @@ export interface AIProvider {
    * @param options - Optional configuration for the chat
    * @returns Promise resolving to the AI's response
    */
-  chat(message: string, options?: ChatOptions): Promise<ChatResponse>
+  chat(_message: string, _options?: ChatOptions): Promise<ChatResponse>
 
   /**
    * Get the token limits for the provider's model
