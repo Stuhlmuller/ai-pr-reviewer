@@ -1,8 +1,11 @@
 import {type Inputs} from './inputs'
+import {FileClassifier} from './file-classifier'
+import {PromptTemplateEngine} from './prompt-templates'
 
 export class Prompts {
   summarize: string
   summarizeReleaseNotes: string
+  enableContextAwarePrompts: boolean
 
   summarizeFileDiff = `## GitHub PR Title
 
@@ -237,9 +240,14 @@ $comment
 \`\`\`
 `
 
-  constructor(summarize = '', summarizeReleaseNotes = '') {
+  constructor(
+    summarize = '',
+    summarizeReleaseNotes = '',
+    enableContextAwarePrompts = true
+  ) {
     this.summarize = summarize
     this.summarizeReleaseNotes = summarizeReleaseNotes
+    this.enableContextAwarePrompts = enableContextAwarePrompts
   }
 
   renderSummarizeFileDiff(
@@ -276,7 +284,48 @@ $comment
     return inputs.render(this.comment)
   }
 
-  renderReviewFileDiff(inputs: Inputs): string {
-    return inputs.render(this.reviewFileDiff)
+  renderReviewFileDiff(inputs: Inputs, fileContent?: string): string {
+    let basePrompt = inputs.render(this.reviewFileDiff)
+
+    // Add context-aware enhancements if enabled
+    if (this.enableContextAwarePrompts && inputs.filename) {
+      const context = FileClassifier.classifyFile(inputs.filename, fileContent)
+      const enhancements = PromptTemplateEngine.generateEnhancements(context)
+      const enhancementText =
+        PromptTemplateEngine.formatEnhancements(enhancements)
+
+      if (enhancementText) {
+        // Insert enhancements before the "Changes made to" section
+        const changesSection = `## Changes made to \`$filename\` for your review`
+        basePrompt = basePrompt.replace(
+          changesSection,
+          `${enhancementText}\n\n${changesSection}`
+        )
+      }
+    }
+
+    return basePrompt
+  }
+
+  renderSummarizeFileDiffWithContext(
+    inputs: Inputs,
+    reviewSimpleChanges: boolean,
+    fileContent?: string
+  ): string {
+    let basePrompt = this.renderSummarizeFileDiff(inputs, reviewSimpleChanges)
+
+    // Add context-aware enhancements if enabled
+    if (this.enableContextAwarePrompts && inputs.filename) {
+      const context = FileClassifier.classifyFile(inputs.filename, fileContent)
+      const enhancements = PromptTemplateEngine.generateEnhancements(context)
+
+      // For summarization, add lightweight context hint
+      if (enhancements.additionalContext) {
+        const contextHint = `\n\nNote: ${enhancements.additionalContext}\n`
+        basePrompt = basePrompt + contextHint
+      }
+    }
+
+    return basePrompt
   }
 }

@@ -178,9 +178,10 @@ async function processSummaries(
     ins.filename = filename
     ins.fileDiff = fileDiff
 
-    const summarizePrompt = prompts.renderSummarizeFileDiff(
+    const summarizePrompt = prompts.renderSummarizeFileDiffWithContext(
       ins,
-      options.reviewSimpleChanges
+      options.reviewSimpleChanges,
+      fileContent
     )
     const tokens = getTokenCount(summarizePrompt)
 
@@ -624,7 +625,9 @@ ${commentChain}
     const ins: Inputs = inputs.clone()
     ins.filename = filename
 
-    const baseTokens = getTokenCount(prompts.renderReviewFileDiff(ins))
+    const baseTokens = getTokenCount(
+      prompts.renderReviewFileDiff(ins, fileContent)
+    )
     const patchesToPack = calculatePatchesToPack(patches, baseTokens)
     const patchesPacked = await packPatchesIntoInputs(
       ins,
@@ -636,7 +639,7 @@ ${commentChain}
     if (patchesPacked > 0) {
       try {
         const [response] = await heavyBot.chat(
-          prompts.renderReviewFileDiff(ins),
+          prompts.renderReviewFileDiff(ins, fileContent),
           {}
         )
         if (response === '') {

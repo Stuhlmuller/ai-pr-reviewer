@@ -32,6 +32,7 @@ export class Options {
   smartReviewSkipSnapshots: boolean
   smartReviewCustomPatterns: string[]
   smartReviewMinLines: number
+  enableContextAwarePrompts: boolean
 
   constructor(
     debug: boolean,
@@ -60,7 +61,8 @@ export class Options {
     smartReviewSkipVendor = true,
     smartReviewSkipSnapshots = true,
     smartReviewCustomPatterns: string[] | null = null,
-    smartReviewMinLines = '3'
+    smartReviewMinLines = '3',
+    enableContextAwarePrompts = true
   ) {
     this.debug = debug
     this.disableReview = disableReview
@@ -91,6 +93,7 @@ export class Options {
     this.smartReviewSkipSnapshots = smartReviewSkipSnapshots
     this.smartReviewCustomPatterns = smartReviewCustomPatterns || []
     this.smartReviewMinLines = parseInt(smartReviewMinLines)
+    this.enableContextAwarePrompts = enableContextAwarePrompts
   }
 
   // print all options using core.info
@@ -130,6 +133,7 @@ export class Options {
       )}`
     )
     info(`smart_review_min_lines: ${this.smartReviewMinLines}`)
+    info(`enable_context_aware_prompts: ${this.enableContextAwarePrompts}`)
   }
 
   checkPath(path: string): boolean {
