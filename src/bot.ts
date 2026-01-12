@@ -10,11 +10,14 @@ import {
 } from 'chatgpt'
 import pRetry from 'p-retry'
 import {OpenAIOptions, Options} from './options'
+import {getTokenCount} from './tokenizer'
+import type {TokenUsage} from './ai-provider'
 
 // define type to save parentMessageId and conversationId
 export interface Ids {
   parentMessageId?: string
   conversationId?: string
+  tokenUsage?: TokenUsage
 }
 
 export class Bot {
@@ -60,7 +63,7 @@ IMPORTANT: Entire response must be in the language with ISO code: ${options.lang
       return res
     } catch (e: unknown) {
       if (e instanceof ChatGPTError) {
-        warning(`Failed to chat: ${e}, backtrace: ${e.stack}`)
+        warning(`Failed to chat: ${e.message}, backtrace: ${e.stack}`)
       }
       return res
     }
@@ -92,7 +95,11 @@ IMPORTANT: Entire response must be in the language with ISO code: ${options.lang
       } catch (e: unknown) {
         if (e instanceof ChatGPTError) {
           info(
-            `response: ${response}, failed to send message to openai: ${e}, backtrace: ${e.stack}`
+            `response: ${JSON.stringify(
+              response
+            )}, failed to send message to openai: ${e.message}, backtrace: ${
+              e.stack
+            }`
           )
         }
       }
@@ -119,9 +126,26 @@ IMPORTANT: Entire response must be in the language with ISO code: ${options.lang
     if (this.options.debug) {
       info(`openai responses: ${responseText}`)
     }
+
+    // Calculate token usage (estimate using tokenizer)
+    const inputTokens = getTokenCount(message)
+    const outputTokens = getTokenCount(responseText)
+    const tokenUsage: TokenUsage = {
+      inputTokens,
+      outputTokens,
+      totalTokens: inputTokens + outputTokens
+    }
+
+    if (this.options.debug) {
+      info(
+        `Token usage - Input: ${inputTokens}, Output: ${outputTokens}, Total: ${tokenUsage.totalTokens}`
+      )
+    }
+
     const newIds: Ids = {
       parentMessageId: response?.id,
-      conversationId: response?.conversationId
+      conversationId: response?.conversationId,
+      tokenUsage
     }
     return [responseText, newIds]
   }

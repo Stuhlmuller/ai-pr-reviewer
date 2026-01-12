@@ -13,12 +13,22 @@ export interface ChatOptions {
 }
 
 /**
+ * Token usage information for a chat response
+ */
+export interface TokenUsage {
+  inputTokens: number
+  outputTokens: number
+  totalTokens: number
+}
+
+/**
  * Response from an AI provider's chat method
  */
 export interface ChatResponse {
   text: string
   parentMessageId?: string
   conversationId?: string
+  tokenUsage?: TokenUsage
 }
 
 /**
