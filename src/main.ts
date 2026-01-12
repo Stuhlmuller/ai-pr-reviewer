@@ -32,7 +32,14 @@ async function run(): Promise<void> {
     getInput('language'),
     getBooleanInput('enable_security_scanner'),
     getBooleanInput('enable_performance_analyzer'),
-    getBooleanInput('enable_complexity_analyzer')
+    getBooleanInput('enable_complexity_analyzer'),
+    getBooleanInput('smart_review_skip_generated'),
+    getBooleanInput('smart_review_skip_trivial'),
+    getBooleanInput('smart_review_skip_build_artifacts'),
+    getBooleanInput('smart_review_skip_vendor'),
+    getBooleanInput('smart_review_skip_snapshots'),
+    getMultilineInput('smart_review_custom_patterns'),
+    getInput('smart_review_min_lines')
   )
 
   // print options

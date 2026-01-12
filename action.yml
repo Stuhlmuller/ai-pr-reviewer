@@ -156,6 +156,42 @@ inputs:
     required: false
     description: 'Enable automatic code complexity analysis'
     default: 'true'
+  smart_review_skip_generated:
+    required: false
+    description:
+      'Skip AI review for generated files (lockfiles, auto-generated code)'
+    default: 'true'
+  smart_review_skip_trivial:
+    required: false
+    description:
+      'Skip AI review for trivial changes (formatting, whitespace, comments
+      only)'
+    default: 'true'
+  smart_review_skip_build_artifacts:
+    required: false
+    description: 'Skip AI review for build artifacts (dist/, build/, etc.)'
+    default: 'true'
+  smart_review_skip_vendor:
+    required: false
+    description: 'Skip AI review for vendor/third-party code'
+    default: 'true'
+  smart_review_skip_snapshots:
+    required: false
+    description: 'Skip AI review for test snapshots'
+    default: 'true'
+  smart_review_custom_patterns:
+    required: false
+    description: |
+      Custom regex patterns to skip (one per line). Example:
+        ^internal/experimental/
+        \.generated\.
+    default: ''
+  smart_review_min_lines:
+    required: false
+    description:
+      'Minimum number of changed lines to trigger AI review (helps skip very
+      small changes)'
+    default: '3'
   openai_base_url:
     required: false
     description: 'The url of the openai api interface.'
