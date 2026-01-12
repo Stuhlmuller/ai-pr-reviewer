@@ -8,8 +8,30 @@ export class TokenLimits {
     // Updated knowledge cutoff for newer models
     this.knowledgeCutOff = '2024-10-01'
 
-    // GPT-4o models (latest and most capable)
+    // Claude models (Anthropic)
     if (
+      model === 'claude-opus-4' ||
+      model === 'claude-opus-4-20250514' ||
+      model === 'claude-opus-4.5'
+    ) {
+      this.maxTokens = 200000
+      this.responseTokens = 4096
+      this.knowledgeCutOff = '2024-10-01'
+    } else if (
+      model === 'claude-sonnet-4' ||
+      model === 'claude-sonnet-4-20250514' ||
+      model === 'claude-sonnet-4.5' ||
+      model === 'claude-3-5-sonnet-20241022' ||
+      model === 'claude-3-5-sonnet-20240620' ||
+      model === 'claude-3-5-haiku-20241022' ||
+      model === 'claude-3-haiku-20240307'
+    ) {
+      this.maxTokens = 200000
+      this.responseTokens = 8192
+      this.knowledgeCutOff = '2024-10-01'
+    }
+    // GPT-4o models (latest and most capable)
+    else if (
       model === 'gpt-4o' ||
       model === 'chatgpt-4o-latest' ||
       model === 'gpt-4o-mini'

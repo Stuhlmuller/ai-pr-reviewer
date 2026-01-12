@@ -118,6 +118,38 @@ describe('TokenLimits', () => {
       expect(limits.requestTokens).toBe(123804)
       expect(limits.knowledgeCutOff).toBe('2024-04-01')
     })
+
+    test('should initialize with claude-opus-4 model', () => {
+      const limits = new TokenLimits('claude-opus-4')
+      expect(limits.maxTokens).toBe(200000)
+      expect(limits.responseTokens).toBe(4096)
+      expect(limits.requestTokens).toBe(195804) // 200000 - 4096 - 100
+      expect(limits.knowledgeCutOff).toBe('2024-10-01')
+    })
+
+    test('should initialize with claude-sonnet-4.5 model', () => {
+      const limits = new TokenLimits('claude-sonnet-4.5')
+      expect(limits.maxTokens).toBe(200000)
+      expect(limits.responseTokens).toBe(8192)
+      expect(limits.requestTokens).toBe(191708) // 200000 - 8192 - 100
+      expect(limits.knowledgeCutOff).toBe('2024-10-01')
+    })
+
+    test('should initialize with claude-3-5-sonnet-20241022 model', () => {
+      const limits = new TokenLimits('claude-3-5-sonnet-20241022')
+      expect(limits.maxTokens).toBe(200000)
+      expect(limits.responseTokens).toBe(8192)
+      expect(limits.requestTokens).toBe(191708)
+      expect(limits.knowledgeCutOff).toBe('2024-10-01')
+    })
+
+    test('should initialize with claude-3-5-haiku-20241022 model', () => {
+      const limits = new TokenLimits('claude-3-5-haiku-20241022')
+      expect(limits.maxTokens).toBe(200000)
+      expect(limits.responseTokens).toBe(8192)
+      expect(limits.requestTokens).toBe(191708)
+      expect(limits.knowledgeCutOff).toBe('2024-10-01')
+    })
   })
 
   describe('string', () => {
