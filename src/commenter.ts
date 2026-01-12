@@ -45,6 +45,9 @@ export const SHORT_SUMMARY_END_TAG = `-->
 export const COMMIT_ID_START_TAG = '<!-- commit_ids_reviewed_start -->'
 export const COMMIT_ID_END_TAG = '<!-- commit_ids_reviewed_end -->'
 
+export const REVIEW_STATE_START_TAG = '<!-- review_state_start -->'
+export const REVIEW_STATE_END_TAG = '<!-- review_state_end -->'
+
 export class Commenter {
   /**
    * @param mode Can be "create", "replace". Default is "replace".
@@ -806,5 +809,66 @@ ${commentBody}`
       )
     }
     return commentBody
+  }
+
+  /**
+   * Gets the review state from the comment body
+   * Returns null if no state is found or if the state is invalid
+   */
+  getReviewState(commentBody: string): string | null {
+    const start = commentBody.indexOf(REVIEW_STATE_START_TAG)
+    const end = commentBody.indexOf(REVIEW_STATE_END_TAG)
+
+    if (start === -1 || end === -1) {
+      return null
+    }
+
+    const stateJson = commentBody.substring(
+      start + REVIEW_STATE_START_TAG.length,
+      end
+    )
+    return stateJson.trim()
+  }
+
+  /**
+   * Adds or updates the review state in the comment body
+   * If state markers don't exist, they are added to the end
+   */
+  setReviewState(commentBody: string, stateJson: string): string {
+    const start = commentBody.indexOf(REVIEW_STATE_START_TAG)
+    const end = commentBody.indexOf(REVIEW_STATE_END_TAG)
+
+    const stateBlock = `${REVIEW_STATE_START_TAG}
+${stateJson}
+${REVIEW_STATE_END_TAG}`
+
+    if (start === -1 || end === -1) {
+      // Add state block to the end of the comment
+      return `${commentBody}\n\n${stateBlock}`
+    }
+
+    // Replace existing state block
+    return (
+      commentBody.substring(0, start) +
+      stateBlock +
+      commentBody.substring(end + REVIEW_STATE_END_TAG.length)
+    )
+  }
+
+  /**
+   * Removes the review state from the comment body
+   */
+  removeReviewState(commentBody: string): string {
+    const start = commentBody.indexOf(REVIEW_STATE_START_TAG)
+    const end = commentBody.indexOf(REVIEW_STATE_END_TAG)
+
+    if (start === -1 || end === -1) {
+      return commentBody
+    }
+
+    return (
+      commentBody.substring(0, start) +
+      commentBody.substring(end + REVIEW_STATE_END_TAG.length)
+    )
   }
 }
