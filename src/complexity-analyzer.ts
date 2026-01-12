@@ -295,6 +295,20 @@ export class ComplexityAnalyzer {
     ]
   }
 
+  /**
+   * Reserved keywords that should not be matched as function names
+   * These are JavaScript/TypeScript control flow statements that match
+   * the method definition patterns but are not functions
+   */
+  private readonly RESERVED_KEYWORDS = new Set([
+    'if',
+    'for',
+    'while',
+    'switch',
+    'catch',
+    'with'
+  ])
+
   private updateBraceDepth(line: string, currentDepth: number): number {
     const openBraces = (line.match(/{/g) || []).length
     const closeBraces = (line.match(/}/g) || []).length
@@ -316,6 +330,10 @@ export class ComplexityAnalyzer {
       const execResult = pattern.exec(line)
       if (execResult) {
         const funcName = execResult[1]
+        // Skip reserved keywords that match control flow statements
+        if (this.RESERVED_KEYWORDS.has(funcName)) {
+          continue
+        }
         const params = execResult[2]
         const paramCount = params
           ? params.split(',').filter(p => p.trim()).length
