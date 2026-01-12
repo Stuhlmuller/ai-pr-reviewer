@@ -18,6 +18,14 @@ import {octokit} from './octokit'
 import {type Options} from './options'
 import {PerformanceAnalyzer} from './performance-analyzer'
 import {type Prompts} from './prompts'
+import {
+  createReviewState,
+  deserializeState,
+  getProgressSummary,
+  isSameReview,
+  serializeState,
+  type ReviewState
+} from './review-state'
 import {SecurityScanner} from './security-scanner'
 import {createSkipAnalyzer, type SkipConfig} from './skip-logic'
 import {getTokenCount} from './tokenizer'
@@ -913,6 +921,51 @@ function appendReviewStatus(
   return statusMsg
 }
 
+/**
+ * Loads review state from existing PR comment
+ * Returns null if no state exists or if state is for a different review
+ */
+async function loadReviewState(
+  commenter: Commenter,
+  pullNumber: number,
+  currentCommitId: string,
+  files: Array<{filename: string}>
+): Promise<ReviewState | null> {
+  const existingComment = await commenter.findCommentWithTag(
+    SUMMARIZE_TAG,
+    pullNumber
+  )
+
+  if (existingComment == null) {
+    return null
+  }
+
+  const stateJson = commenter.getReviewState(existingComment.body)
+  if (stateJson == null) {
+    return null
+  }
+
+  const state = deserializeState(stateJson)
+  if (state == null) {
+    info('Failed to deserialize review state, starting fresh')
+    return null
+  }
+
+  // Create a temporary state for the current review to compare
+  const currentState = createReviewState(currentCommitId, files)
+
+  // Check if the stored state is for the same review
+  if (!isSameReview(state, currentState)) {
+    info('Stored state is for a different review, starting fresh')
+    return null
+  }
+
+  info(
+    `Loaded existing review state: ${state.completedFiles}/${state.totalFiles} files completed`
+  )
+  return state
+}
+
 async function finalizeReviewWithComment(
   commenter: Commenter,
   pullNumber: number,
@@ -1004,7 +1057,32 @@ export const codeReview = async (
     return
   }
 
+  // Initialize or load review state
+  const currentCommitId = context.payload.pull_request.head.sha
+  const filesToReview = filesAndChanges.map(([filename]) => ({filename}))
+
+  let reviewState = await loadReviewState(
+    commenter,
+    context.payload.pull_request.number,
+    currentCommitId,
+    filesToReview
+  )
+
+  if (reviewState == null) {
+    // Create new review state
+    reviewState = createReviewState(currentCommitId, filesToReview)
+    info(`Created new review state for ${filesToReview.length} files`)
+  } else {
+    info(
+      `Resumed review state: ${reviewState.completedFiles}/${reviewState.totalFiles} files completed`
+    )
+  }
+
   let statusMsg = createStatusMessage()
+
+  // Add progress summary to status message
+  const progressSummary = getProgressSummary(reviewState)
+  statusMsg = `${statusMsg}\n\n📊 ${progressSummary}`
 
   // update the existing comment with in progress status
   const inProgressSummarizeCmt = commenter.addInProgressStatus(
@@ -1012,8 +1090,14 @@ export const codeReview = async (
     statusMsg
   )
 
+  // Save state to comment
+  const commentWithState = commenter.setReviewState(
+    inProgressSummarizeCmt,
+    serializeState(reviewState)
+  )
+
   // add in progress status to the summarize comment
-  await commenter.comment(`${inProgressSummarizeCmt}`, SUMMARIZE_TAG, 'replace')
+  await commenter.comment(commentWithState, SUMMARIZE_TAG, 'replace')
 
   const summariesFailed: string[] = []
   const {summaries, skippedFiles} = await processSummaries(
