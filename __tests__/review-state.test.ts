@@ -9,9 +9,7 @@ import {
   getProgressSummary,
   isReviewComplete,
   isSameReview,
-  classifyError,
-  type ReviewState,
-  type FileReviewStatus
+  classifyError
 } from '../src/review-state'
 
 describe('review-state', () => {

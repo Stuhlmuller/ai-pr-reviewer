@@ -8,18 +8,20 @@
  * how commit IDs are tracked.
  */
 
+export type FileStatus =
+  | 'pending'
+  | 'summarizing'
+  | 'summarized'
+  | 'reviewing'
+  | 'reviewed'
+  | 'failed'
+  | 'skipped'
+
 export interface FileReviewStatus {
   /** File path relative to repository root */
   filename: string
   /** Current status: pending, summarizing, summarized, reviewing, reviewed, failed, skipped */
-  status:
-    | 'pending'
-    | 'summarizing'
-    | 'summarized'
-    | 'reviewing'
-    | 'reviewed'
-    | 'failed'
-    | 'skipped'
+  status: FileStatus
   /** Error message if status is 'failed' */
   error?: string
   /** Timestamp when this status was last updated (ISO 8601) */
@@ -93,7 +95,7 @@ export function createReviewState(
 export function updateFileStatus(
   state: ReviewState,
   filename: string,
-  status: FileReviewStatus['status'],
+  status: FileStatus,
   options?: {
     error?: string
     skipConfidence?: number
