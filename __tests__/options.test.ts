@@ -125,8 +125,8 @@ describe('Options', () => {
       const options = new Options(true, false, true, '5')
       options.print()
 
-      // Options.print() calls info 29 times (22 original + 7 smart review options)
-      expect(info).toHaveBeenCalledTimes(29)
+      // Options.print() calls info 30 times (22 original + 7 smart review options + 1 context-aware prompts)
+      expect(info).toHaveBeenCalledTimes(30)
       expect(info).toHaveBeenCalledWith('debug: true')
       expect(info).toHaveBeenCalledWith('disable_review: false')
       expect(info).toHaveBeenCalledWith('disable_release_notes: true')
