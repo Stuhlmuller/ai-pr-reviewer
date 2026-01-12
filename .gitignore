@@ -125,3 +125,4 @@ tags.lock
 bin/act
 
 specs/
+.agent/
