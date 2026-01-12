@@ -273,7 +273,7 @@ describe('OpenAIOptions', () => {
       const options = new OpenAIOptions()
       expect(options.model).toBe('gpt-3.5-turbo')
       expect(options.tokenLimits).toBeInstanceOf(TokenLimits)
-      expect(options.tokenLimits.maxTokens).toBe(4000)
+      expect(options.tokenLimits.maxTokens).toBe(16385)
     })
 
     test('should initialize with custom model', () => {
