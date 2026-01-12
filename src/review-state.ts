@@ -17,6 +17,13 @@ export type FileStatus =
   | 'failed'
   | 'skipped'
 
+export type ErrorType =
+  | 'rate_limit'
+  | 'timeout'
+  | 'network'
+  | 'api_error'
+  | 'unknown'
+
 export interface FileReviewStatus {
   /** File path relative to repository root */
   filename: string
@@ -58,7 +65,7 @@ export interface ReviewState {
     message: string
     timestamp: string
     /** Error type: 'rate_limit', 'timeout', 'network', 'api_error', 'unknown' */
-    type: 'rate_limit' | 'timeout' | 'network' | 'api_error' | 'unknown'
+    type: ErrorType
   }
 }
 
@@ -178,7 +185,7 @@ export function updatePhase(
 export function recordError(
   state: ReviewState,
   error: string,
-  type: 'rate_limit' | 'timeout' | 'network' | 'api_error' | 'unknown'
+  type: ErrorType
 ): ReviewState {
   return {
     ...state,
@@ -316,9 +323,7 @@ export function isSameReview(
 /**
  * Classifies an error into a specific error type for better handling
  */
-export function classifyError(
-  error: any
-): 'rate_limit' | 'timeout' | 'network' | 'api_error' | 'unknown' {
+export function classifyError(error: any): ErrorType {
   const errorStr = String(error).toLowerCase()
 
   if (errorStr.includes('rate limit') || errorStr.includes('429')) {
