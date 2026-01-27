@@ -125,3 +125,5 @@ tags.lock
 bin/act
 
 specs/
+
+.claude/*.local.md
