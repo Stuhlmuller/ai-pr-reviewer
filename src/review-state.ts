@@ -22,6 +22,7 @@ export type ErrorType =
   | 'timeout'
   | 'network'
   | 'api_error'
+  | 'token_limit'
   | 'unknown'
 
 export interface FileReviewStatus {
@@ -349,6 +350,14 @@ export function classifyError(error: any): ErrorType {
     errorStr.includes('invalid')
   ) {
     return 'api_error'
+  }
+
+  if (
+    errorStr.includes('token') ||
+    errorStr.includes('too large') ||
+    errorStr.includes('context length')
+  ) {
+    return 'token_limit'
   }
 
   return 'unknown'
