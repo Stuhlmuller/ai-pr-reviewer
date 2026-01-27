@@ -40,7 +40,9 @@ async function run(): Promise<void> {
     getBooleanInput('smart_review_skip_snapshots'),
     getMultilineInput('smart_review_custom_patterns'),
     getInput('smart_review_min_lines'),
-    getBooleanInput('enable_context_aware_prompts')
+    getBooleanInput('enable_context_aware_prompts'),
+    getInput('max_retry_attempts'),
+    getBooleanInput('enable_resume')
   )
 
   // print options

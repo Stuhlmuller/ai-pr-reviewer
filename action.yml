@@ -198,6 +198,19 @@ inputs:
       'Enable context-aware prompts that adapt based on file type (test, config,
       docs) and framework (React, Vue, etc.) for more relevant reviews'
     default: 'true'
+  max_retry_attempts:
+    required: false
+    description:
+      'Maximum number of retry attempts for failed file reviews (rate limits,
+      timeouts, network errors). Set to 0 to disable retry.'
+    default: '3'
+  enable_resume:
+    required: false
+    description:
+      'Enable resume capability to continue from last successful file on retry.
+      When enabled, the action will skip already-reviewed files and resume from
+      where it left off.'
+    default: 'true'
   openai_base_url:
     required: false
     description: 'The url of the openai api interface.'
