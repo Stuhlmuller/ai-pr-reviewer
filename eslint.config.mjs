@@ -101,7 +101,7 @@ export default [
       parserOptions: {
         ecmaVersion: 'latest',
         sourceType: 'module',
-        projectService: true,
+        project: './tsconfig.test.json',
         tsconfigRootDir: import.meta.dirname
       },
       globals: {
