@@ -33,6 +33,8 @@ export class Options {
   smartReviewCustomPatterns: string[]
   smartReviewMinLines: number
   enableContextAwarePrompts: boolean
+  maxRetryAttempts: number
+  enableResume: boolean
 
   constructor(
     debug: boolean,
@@ -62,7 +64,9 @@ export class Options {
     smartReviewSkipSnapshots = true,
     smartReviewCustomPatterns: string[] | null = null,
     smartReviewMinLines = '3',
-    enableContextAwarePrompts = true
+    enableContextAwarePrompts = true,
+    maxRetryAttempts = '3',
+    enableResume = true
   ) {
     this.debug = debug
     this.disableReview = disableReview
@@ -94,6 +98,8 @@ export class Options {
     this.smartReviewCustomPatterns = smartReviewCustomPatterns || []
     this.smartReviewMinLines = parseInt(smartReviewMinLines)
     this.enableContextAwarePrompts = enableContextAwarePrompts
+    this.maxRetryAttempts = parseInt(maxRetryAttempts)
+    this.enableResume = enableResume
   }
 
   // print all options using core.info

@@ -1,0 +1,13 @@
+---
+- id: yamllint
+  name: yamllint
+  description: This hook runs yamllint.
+  entry: yamllint
+  language: python
+  types: [file, yaml]
+- id: jscpd
+  name: Check for duplicated code
+  entry: jscpd
+  args: ['--gitignore', '--exitCode', "'1'"]
+  language: node
+  types: [text]
