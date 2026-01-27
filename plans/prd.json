@@ -1,0 +1,641 @@
+{
+  "project": {
+    "name": "AI PR Reviewer",
+    "description": "GitHub Action that provides AI-powered code review and PR summarization using OpenAI and Anthropic language models",
+    "vision": "Build the world's best AI-powered PR review bot for 'vibe coders' - developers who value intuitive, helpful feedback",
+    "repository": "ai-pr-reviewer",
+    "lastUpdated": "2026-01-12"
+  },
+  "currentStatus": {
+    "branch": "ralph/resume-retry-phase2",
+    "lastMergedPR": "#34",
+    "testCoverage": "33%",
+    "testCoverageTarget": "80%+",
+    "overallHealth": "stable",
+    "openPRs": 0,
+    "recentActivity": "Review state tracking and progress display (Phase 2a) complete - ready for PR"
+  },
+  "coreArchitecture": {
+    "entryPoint": "main.ts",
+    "keyComponents": [
+      {
+        "name": "Bot",
+        "file": "bot.ts",
+        "purpose": "Wraps ChatGPT API with retry logic, manages conversation state",
+        "coverage": "0%"
+      },
+      {
+        "name": "Review Flow",
+        "file": "review.ts",
+        "purpose": "Orchestrates review process, manages incremental diffs",
+        "coverage": "0%"
+      },
+      {
+        "name": "Commenter",
+        "file": "commenter.ts",
+        "purpose": "Handles all GitHub comment operations via Octokit",
+        "coverage": "16%"
+      },
+      {
+        "name": "AI Provider",
+        "file": "ai-provider.ts",
+        "purpose": "Interface for multi-provider AI support (OpenAI, Anthropic)",
+        "coverage": "varies"
+      },
+      {
+        "name": "Security Scanner",
+        "file": "security-scanner.ts",
+        "purpose": "OWASP Top 10 vulnerability detection",
+        "coverage": "98%"
+      },
+      {
+        "name": "Performance Analyzer",
+        "file": "performance-analyzer.ts",
+        "purpose": "Detects N+1 queries, memory leaks, blocking operations",
+        "coverage": "varies"
+      },
+      {
+        "name": "Complexity Analyzer",
+        "file": "complexity-analyzer.ts",
+        "purpose": "Tracks cyclomatic and cognitive complexity",
+        "coverage": "99%"
+      }
+    ],
+    "dualModelArchitecture": {
+      "lightBot": "gpt-3.5-turbo for summaries (cheap + fast)",
+      "heavyBot": "gpt-4 for detailed reviews (expensive but thorough)"
+    }
+  },
+  "completedFeatures": [
+    {
+      "id": "PR-34",
+      "name": "Review State Management Foundation",
+      "date": "2026-01-12",
+      "phase": "Phase 1",
+      "description": "Core state tracking infrastructure for resume & retry capability",
+      "impact": "Enables graceful failure recovery in future phases",
+      "files": [
+        "src/review-state.ts",
+        "__tests__/review-state.test.ts",
+        "src/commenter.ts"
+      ],
+      "linesAdded": 852,
+      "testCoverage": "high"
+    },
+    {
+      "id": "PR-33",
+      "name": "Context-Aware Prompts",
+      "date": "2026-01-12",
+      "description": "Specialized prompts based on file type, framework, and context detection",
+      "impact": "More relevant and focused code reviews",
+      "features": [
+        "File type detection (source, tests, config, docs)",
+        "Framework detection (React, Vue, Next.js, Express, etc.)",
+        "Special context detection (API routes, database code, UI components)",
+        "Confidence scoring for classifications"
+      ],
+      "linesAdded": 1503,
+      "testCoverage": "high"
+    },
+    {
+      "id": "PR-32",
+      "name": "Smart Review Skipping",
+      "date": "2026-01-12",
+      "description": "Intelligent file classification to avoid wasting AI credits",
+      "impact": "30-50% cost reduction without sacrificing review quality",
+      "features": [
+        "Skip lockfiles, build artifacts, vendor code",
+        "Skip test snapshots and generated files",
+        "Skip trivial changes (whitespace, comments)",
+        "Custom skip patterns via configuration"
+      ],
+      "linesAdded": 1456,
+      "testCoverage": "93.6%"
+    },
+    {
+      "id": "PR-31",
+      "name": "Cost Tracking & Token Usage Metrics",
+      "date": "2026-01-11",
+      "description": "Comprehensive cost tracking with per-file breakdown",
+      "impact": "Transparency and control over AI spending",
+      "features": [
+        "Model-specific pricing database",
+        "Token usage metrics for all API calls",
+        "Cost calculation and markdown summary generation",
+        "Per-file cost breakdown in PR comments"
+      ],
+      "linesAdded": 799,
+      "testCoverage": "98.7%"
+    },
+    {
+      "id": "PR-30",
+      "name": "Analyzer Integration",
+      "date": "2026-01-11",
+      "description": "Integrated all three analyzers into main review workflow",
+      "impact": "Automatic security, performance, and complexity analysis on every PR",
+      "features": [
+        "Security Scanner integration with enable/disable",
+        "Performance Analyzer integration",
+        "Complexity Analyzer integration",
+        "Results displayed in PR summary"
+      ],
+      "linesAdded": 135
+    },
+    {
+      "id": "PR-29",
+      "name": "ESLint v9 Migration",
+      "date": "2026-01-11",
+      "description": "Migrated to ESLint v9 flat config format",
+      "impact": "Future-proof for ESLint upgrades, better maintainability",
+      "files": ["eslint.config.mjs"],
+      "testsPassing": 181
+    },
+    {
+      "id": "PR-28",
+      "name": "Multi-Provider AI Support + Security & Performance Analysis",
+      "date": "2026-01-11",
+      "description": "World's first open-source multi-provider PR reviewer",
+      "impact": "Choice of models, reliability through fallback, cost optimization",
+      "features": [
+        "Anthropic Claude support (Opus 4/4.5, Sonnet 4/4.5/3.5, Haiku 3/3.5)",
+        "OpenAI support (GPT-4o, GPT-4o-mini, GPT-4 Turbo, o1-preview, o1-mini)",
+        "Security Vulnerability Scanner (OWASP Top 10)",
+        "Performance Analyzer (N+1 queries, memory leaks, blocking ops)",
+        "Complexity Analyzer (cyclomatic/cognitive complexity)"
+      ],
+      "linesAdded": 15172,
+      "testCoverage": "33% overall (up from 20%)"
+    }
+  ],
+  "roadmap": {
+    "vision": "Best PR reviewer is insightful, fast, smart, reliable, cost-effective, and customizable",
+    "priorities": {
+      "P0_Critical": [
+        {
+          "id": "resume-retry",
+          "name": "Resume & Retry Capability",
+          "status": "in-progress",
+          "currentPhase": "Phase 2a complete, Phase 2b/2c remaining",
+          "goal": "Handle failures gracefully without losing progress",
+          "features": [
+            {
+              "phase": "Phase 1",
+              "status": "complete",
+              "items": [
+                "State management infrastructure",
+                "Serialization/deserialization",
+                "State persistence to GitHub comments"
+              ]
+            },
+            {
+              "phase": "Phase 2a",
+              "status": "complete",
+              "items": [
+                "State initialization and loading",
+                "Progress display in PR comments",
+                "State tracking during review"
+              ]
+            },
+            {
+              "phase": "Phase 2b",
+              "status": "pending",
+              "name": "Resume Logic",
+              "items": [
+                "Detect incomplete reviews from previous runs",
+                "Skip already-completed files during summarization",
+                "Skip already-reviewed files during review phase",
+                "Resume from first pending/failed file",
+                "Preserve existing comments for completed files"
+              ]
+            },
+            {
+              "phase": "Phase 2c",
+              "status": "pending",
+              "name": "Retry Logic",
+              "items": [
+                "Exponential backoff for failed files",
+                "Different retry strategies per error type (rate_limit, api_error, timeout, token_limit)",
+                "Maximum retry attempts configuration",
+                "Display estimated time remaining",
+                "Show retry status for failed files"
+              ]
+            }
+          ],
+          "impact": "More reliable reviews, no duplicate work on retries",
+          "estimatedCostReduction": "minimize wasted retries"
+        },
+        {
+          "id": "ai-quality",
+          "name": "Improve AI Review Quality",
+          "status": "partially-complete",
+          "goal": "Make reviews more insightful and less noisy",
+          "completedItems": [
+            "Context-aware prompting (file type, framework detection) - PR #33"
+          ],
+          "remainingItems": [
+            "Multi-pass review strategy (security pass, performance pass, etc.)",
+            "Specialized prompts for different file types",
+            "Explain this code capability for complex logic",
+            "Review templates (security-focused, performance-focused)"
+          ],
+          "impact": "Higher quality reviews that developers actually want to read"
+        }
+      ],
+      "P1_HighPriority": [
+        {
+          "id": "cost-optimization",
+          "name": "Cost Tracking & Optimization",
+          "status": "partially-complete",
+          "completedFeatures": [
+            "Token usage tracking per PR/file/repository - PR #31",
+            "Cost estimates in PR comments - PR #31",
+            "Model-specific pricing database - PR #31"
+          ],
+          "remainingFeatures": [
+            "Budget limits per repository or organization",
+            "Cost optimization recommendations",
+            "Export cost metrics to CSV/JSON",
+            "Alerting for high-cost PRs"
+          ],
+          "impact": "Transparency and control over AI spending"
+        },
+        {
+          "id": "caching-performance",
+          "name": "Caching & Performance",
+          "status": "not-started",
+          "goal": "Make reviews faster and cheaper",
+          "features": [
+            "Cache file contents between commits",
+            "Cache review results for unchanged files",
+            "Smart diff compression",
+            "Embeddings-based similarity search",
+            "Parallel processing improvements",
+            "Batch API calls more efficiently"
+          ],
+          "impact": "2-3x faster reviews, 20-30% cost reduction"
+        },
+        {
+          "id": "custom-rules",
+          "name": "Custom Rules Engine",
+          "status": "not-started",
+          "goal": "Let teams define their own review criteria",
+          "features": [
+            "Custom regex patterns for specific warnings",
+            "Team-specific best practices",
+            "Per-directory configuration (.codereviewer.yml)",
+            "Rule severity levels (error, warning, info)",
+            "Rule disable comments in code",
+            "Rule templates for common frameworks"
+          ],
+          "impact": "Reviews tailored to team standards"
+        },
+        {
+          "id": "learning-adaptation",
+          "name": "Learning & Adaptation",
+          "status": "not-started",
+          "goal": "Get better over time by learning from feedback",
+          "features": [
+            "Track which comments get dismissed vs acted upon",
+            "Adjust confidence scoring based on feedback",
+            "Learn repository-specific patterns",
+            "Generate periodic review quality reports",
+            "A/B test different prompts automatically"
+          ],
+          "impact": "Reviews get smarter over time, less false positives"
+        }
+      ],
+      "P2_NiceToHave": [
+        {
+          "id": "github-integration",
+          "name": "Advanced GitHub Integration",
+          "features": [
+            "GitHub Discussions support",
+            "GitHub Projects integration",
+            "GitHub Copilot sync",
+            "PR template analysis",
+            "Commit message quality analysis",
+            "Branch protection rule integration"
+          ]
+        },
+        {
+          "id": "multi-language",
+          "name": "Multi-Language Support",
+          "features": [
+            "Language-specific analyzers (Go, Rust, Java, Python)",
+            "Framework detection (React, Vue, Django, Rails)",
+            "Language-specific security patterns",
+            "Language-specific performance patterns",
+            "Idiomatic code suggestions per language"
+          ]
+        },
+        {
+          "id": "team-collaboration",
+          "name": "Team Collaboration Features",
+          "features": [
+            "Shared configuration repository (org-level)",
+            "Review assignment suggestions",
+            "Team metrics dashboard",
+            "Knowledge base integration",
+            "Review checklist generation",
+            "Automated follow-up comments"
+          ]
+        },
+        {
+          "id": "plugin-system",
+          "name": "Plugin System",
+          "features": [
+            "Plugin API for custom analyzers",
+            "Plugin marketplace",
+            "WebAssembly plugin support",
+            "Example plugins",
+            "Plugin versioning and updates",
+            "Plugin testing framework"
+          ]
+        }
+      ],
+      "research": [
+        {
+          "id": "advanced-ai",
+          "name": "Advanced AI Capabilities",
+          "features": [
+            "Multi-modal reviews (screenshots, diagrams, UI changes)",
+            "Voice-based code review summaries",
+            "Automated test generation from PR changes",
+            "Automated bug fix suggestions",
+            "Code refactoring suggestions with diffs",
+            "Architecture change recommendations"
+          ]
+        },
+        {
+          "id": "security-compliance",
+          "name": "Security & Compliance",
+          "features": [
+            "PII detection and redaction",
+            "License compliance checking",
+            "Supply chain security (dependency vulnerabilities)",
+            "Secret scanning improvements",
+            "SBOM generation",
+            "SOC 2 compliance features"
+          ]
+        }
+      ]
+    }
+  },
+  "technicalDebt": [
+    {
+      "area": "Test Coverage",
+      "priority": "high",
+      "target": "80%+ overall coverage",
+      "current": "33%",
+      "untestedModules": [
+        {"file": "bot.ts", "coverage": "0%"},
+        {"file": "review.ts", "coverage": "0%"},
+        {"file": "review-comment.ts", "coverage": "0%"},
+        {"file": "commenter.ts", "coverage": "16%"},
+        {"file": "anthropic-provider.ts", "coverage": "0%"},
+        {"file": "performance-analyzer.ts", "coverage": "0%"}
+      ]
+    },
+    {
+      "area": "qlty Compatibility",
+      "priority": "low",
+      "issue": "qlty uses ESLint 8.x internally, incompatible with ESLint v9 flat config",
+      "workaround": "Use 'npm run lint' instead",
+      "resolution": "Wait for qlty to upgrade their ESLint version"
+    },
+    {
+      "area": "Code Refactoring",
+      "priority": "medium",
+      "items": [
+        "Extract nested functions in review.ts for testability",
+        "Create separate modules (patch-parser, review-parser, review-orchestrator)",
+        "Replace 'any' types with proper interfaces",
+        "Add type guards for runtime validation"
+      ]
+    }
+  ],
+  "developmentWorkflow": {
+    "agent": {
+      "name": "Ralph",
+      "responsibilities": [
+        "Implement new features that improve PR review experience",
+        "Maintain code quality and repository health",
+        "Prioritize feature work (80%) over test coverage (20%)",
+        "Commit and push changes after each significant file modification",
+        "Never bypass pre-commit hooks"
+      ],
+      "branchPattern": "ralph/<feature-name>",
+      "prProcess": [
+        "Create feature branch",
+        "Implement changes with frequent commits",
+        "Run quality checks before every commit",
+        "Open PR when feature complete",
+        "Address all PR feedback before merging",
+        "Merge with squash and auto-delete branch"
+      ]
+    },
+    "qualityChecks": {
+      "beforeCommit": [
+        "qlty fmt (auto-format code)",
+        "npm run all (tests and builds)",
+        "qlty check <changed_files> --fix --level=low",
+        "qlty smells <changed_files>"
+      ],
+      "requiredForMerge": [
+        "All tests passing",
+        "All CI checks passing",
+        "All PR comments addressed",
+        "Build successful"
+      ]
+    },
+    "continuousLoop": {
+      "description": "Agent operates in continuous loops, checking for open PRs and addressing feedback before starting new work",
+      "steps": [
+        "Check for open PRs with pending feedback",
+        "Fix unresolved comments or failed checks first",
+        "Read .agent/todo.md to determine next work",
+        "If no todos, review .agent/roadmap.md for next high-impact feature",
+        "Work on one feature per loop iteration",
+        "Update status files if blocked",
+        "Never leave uncommitted changes"
+      ]
+    }
+  },
+  "configuration": {
+    "actionInputs": {
+      "models": {
+        "openai_light_model": "gpt-3.5-turbo (summaries)",
+        "openai_heavy_model": "gpt-4 (detailed reviews)",
+        "openai_base_url": "custom OpenAI API endpoints"
+      },
+      "reviewBehavior": {
+        "system_message": "custom system prompt",
+        "path_filters": "include/exclude patterns",
+        "review_simple_changes": "false (default)",
+        "review_comment_lgtm": "false (default)",
+        "disable_review": "control features",
+        "disable_release_notes": "control features"
+      },
+      "analyzers": {
+        "enable_security_scanner": "true (default)",
+        "enable_performance_analyzer": "true (default)",
+        "enable_complexity_analyzer": "true (default)",
+        "enable_context_aware_prompts": "true (default)"
+      },
+      "smartSkipping": {
+        "smart_review_skip_generated": "true (default)",
+        "smart_review_skip_trivial": "true (default)",
+        "smart_review_skip_build_artifacts": "true (default)",
+        "smart_review_skip_vendor": "true (default)",
+        "smart_review_skip_snapshots": "true (default)",
+        "smart_review_custom_patterns": "custom regex patterns",
+        "smart_review_min_lines": "3 (default)"
+      },
+      "concurrency": {
+        "openai_concurrency_limit": "configurable",
+        "github_concurrency_limit": "configurable"
+      }
+    },
+    "environmentVariables": {
+      "GITHUB_TOKEN": "required for PR comment access",
+      "OPENAI_API_KEY": "required for OpenAI API access",
+      "OPENAI_API_ORG": "optional organization ID"
+    }
+  },
+  "supportedModels": {
+    "anthropic": [
+      {
+        "name": "claude-opus-4",
+        "contextWindow": "200K",
+        "outputTokens": "4096",
+        "useCase": "most capable"
+      },
+      {
+        "name": "claude-opus-4.5",
+        "contextWindow": "200K",
+        "outputTokens": "4096",
+        "useCase": "most capable (latest)"
+      },
+      {
+        "name": "claude-sonnet-4",
+        "contextWindow": "200K",
+        "outputTokens": "8192",
+        "useCase": "balanced"
+      },
+      {
+        "name": "claude-sonnet-4.5",
+        "contextWindow": "200K",
+        "outputTokens": "8192",
+        "useCase": "balanced (latest)"
+      },
+      {
+        "name": "claude-sonnet-3.5",
+        "contextWindow": "200K",
+        "outputTokens": "8192",
+        "useCase": "balanced (previous)"
+      },
+      {
+        "name": "claude-haiku-3",
+        "contextWindow": "200K",
+        "outputTokens": "8192",
+        "useCase": "fast and cheap"
+      },
+      {
+        "name": "claude-haiku-3.5",
+        "contextWindow": "200K",
+        "outputTokens": "8192",
+        "useCase": "fast and cheap (latest)"
+      }
+    ],
+    "openai": [
+      {
+        "name": "gpt-4o",
+        "contextWindow": "128K",
+        "outputTokens": "16384",
+        "useCase": "balanced multimodal"
+      },
+      {
+        "name": "gpt-4o-mini",
+        "contextWindow": "128K",
+        "outputTokens": "16384",
+        "useCase": "fast and cheap"
+      },
+      {
+        "name": "gpt-4-turbo",
+        "contextWindow": "128K",
+        "outputTokens": "4096",
+        "useCase": "capable (previous gen)"
+      },
+      {
+        "name": "gpt-3.5-turbo",
+        "contextWindow": "16K",
+        "outputTokens": "4096",
+        "useCase": "very fast and cheap"
+      },
+      {
+        "name": "o1-preview",
+        "contextWindow": "128K",
+        "outputTokens": "varies",
+        "useCase": "advanced reasoning"
+      },
+      {
+        "name": "o1-mini",
+        "contextWindow": "128K",
+        "outputTokens": "varies",
+        "useCase": "fast reasoning"
+      }
+    ]
+  },
+  "keyMetrics": {
+    "userExperience": {
+      "reviewQualityScore": "upvotes/downvotes on comments",
+      "reviewCompletionTime": "target <2 minutes for typical PRs",
+      "falsePositiveRate": "target <10%",
+      "userRetention": "target 90% after 3 months"
+    },
+    "technical": {
+      "testCoverage": "target 80%+",
+      "apiUptime": "target 99.9%",
+      "averageCostPerPR": "target <$0.50",
+      "reviewLatencyP95": "target <5 minutes"
+    },
+    "business": {
+      "activeUsers": "GitHub Actions runs per week",
+      "githubStars": "community interest",
+      "contributorCount": "open source health",
+      "issueResolutionTime": "support quality"
+    }
+  },
+  "decisionFramework": {
+    "priorityFormula": "(User Impact × Strategic Value) / (Effort × Risk)",
+    "criteria": [
+      "User Impact: How many users benefit? How much improvement?",
+      "Effort: How long? Implementation complexity?",
+      "Strategic Value: Differentiation from competitors?",
+      "Dependencies: What needs to be built first?",
+      "Risk: What could go wrong? Is it reversible?"
+    ]
+  },
+  "principles": {
+    "development": [
+      "Focus on 80/20 rule: 80% feature development, 20% testing",
+      "Ship often, get feedback, iterate",
+      "Quality gates are non-negotiable",
+      "Keep main branch stable and deployable",
+      "Each feature gets its own branch and PR",
+      "Commit and push after each significant file change"
+    ],
+    "reviewPhilosophy": [
+      "Focus on substance over style",
+      "Prioritize logic, security, performance, error handling",
+      "Skip minor issues like code style and missing comments",
+      "Use dual-model approach: light for summaries, heavy for reviews"
+    ],
+    "userExperience": [
+      "Prioritize developer experience",
+      "Focus on impactful features over incremental improvements",
+      "Balance shipping speed with code quality",
+      "The best PR reviewer is the one developers actually want to use"
+    ]
+  }
+}
