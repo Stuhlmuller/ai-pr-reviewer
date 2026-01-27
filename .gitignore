@@ -127,3 +127,5 @@ bin/act
 specs/
 
 .agent/
+
+.claude/*.local.md
