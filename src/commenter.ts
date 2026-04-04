@@ -1,52 +1,80 @@
 import {getInput, info, warning} from '@actions/core'
-// eslint-disable-next-line camelcase
 import {context as github_context} from '@actions/github'
+import {BOT_NAME} from './brand'
+import {
+  composeCommentChain as buildCommentChain,
+  getTopLevelComment as resolveTopLevelComment
+} from './commenter-chains'
+import {
+  commentHasContent,
+  commentMatchesExactRange,
+  commentSpansRange,
+  listPaginatedCached
+} from './commenter-helpers'
+import {
+  bodyHasTag,
+  COMMENT_TAG,
+  DESCRIPTION_END_TAG,
+  DESCRIPTION_START_TAG,
+  getContentWithinTagAliases,
+  RAW_SUMMARY_END_TAG,
+  RAW_SUMMARY_START_TAG,
+  removeContentWithinTagAliases,
+  SHORT_SUMMARY_END_TAG,
+  SHORT_SUMMARY_START_TAG
+} from './comment-tags'
+import {
+  normalizeIssueComment,
+  normalizeReviewComment,
+  type GithubIssueComment,
+  type GithubReviewComment,
+  type GithubReviewCommentDraft,
+  type GithubReviewCommentLike
+} from './github-types'
+import {
+  addInProgressStatus as buildInProgressStatus,
+  addReviewedCommitId as appendReviewedCommitId,
+  collectCommitIds,
+  getHighestReviewedCommitId as resolveHighestReviewedCommitId,
+  getReviewState as extractReviewState,
+  getReviewedCommitIds as extractReviewedCommitIds,
+  getReviewedCommitIdsBlock as extractReviewedCommitIdsBlock,
+  removeInProgressStatus as stripInProgressStatus,
+  removeReviewState as stripReviewState,
+  setReviewState as replaceReviewState
+} from './commenter-state'
+import {
+  deletePendingReview as removePendingReview,
+  submitEmptyReview as createEmptyReview
+} from './commenter-review'
+import {reviewCommentReply as sendReviewCommentReply} from './commenter-replies'
 import {octokit} from './octokit'
 
-// eslint-disable-next-line camelcase
 const context = github_context
 const repo = context.repo
 
-export const COMMENT_GREETING = `${getInput('bot_icon')} CodeReviewer`
+export const COMMENT_GREETING = `${getInput('bot_icon')} ${BOT_NAME}`
+export {
+  bodyHasTag,
+  COMMENT_REPLY_TAG,
+  COMMENT_TAG,
+  DESCRIPTION_END_TAG,
+  DESCRIPTION_START_TAG,
+  IN_PROGRESS_END_TAG,
+  IN_PROGRESS_START_TAG,
+  RAW_SUMMARY_END_TAG,
+  RAW_SUMMARY_START_TAG,
+  SHORT_SUMMARY_END_TAG,
+  SHORT_SUMMARY_START_TAG,
+  SUMMARIZE_TAG
+} from './comment-tags'
 
-export const COMMENT_TAG =
-  '<!-- This is an auto-generated comment by OSS CodeReviewer -->'
-
-export const COMMENT_REPLY_TAG =
-  '<!-- This is an auto-generated reply by OSS CodeReviewer -->'
-
-export const SUMMARIZE_TAG =
-  '<!-- This is an auto-generated comment: summarize by OSS CodeReviewer -->'
-
-export const IN_PROGRESS_START_TAG =
-  '<!-- This is an auto-generated comment: summarize review in progress by OSS CodeReviewer -->'
-
-export const IN_PROGRESS_END_TAG =
-  '<!-- end of auto-generated comment: summarize review in progress by OSS CodeReviewer -->'
-
-export const DESCRIPTION_START_TAG =
-  '<!-- This is an auto-generated comment: release notes by OSS CodeReviewer -->'
-export const DESCRIPTION_END_TAG =
-  '<!-- end of auto-generated comment: release notes by OSS CodeReviewer -->'
-
-export const RAW_SUMMARY_START_TAG = `<!-- This is an auto-generated comment: raw summary by OSS CodeReviewer -->
-<!--
-`
-export const RAW_SUMMARY_END_TAG = `-->
-<!-- end of auto-generated comment: raw summary by OSS CodeReviewer -->`
-
-export const SHORT_SUMMARY_START_TAG = `<!-- This is an auto-generated comment: short summary by OSS CodeReviewer -->
-<!--
-`
-
-export const SHORT_SUMMARY_END_TAG = `-->
-<!-- end of auto-generated comment: short summary by OSS CodeReviewer -->`
-
-export const COMMIT_ID_START_TAG = '<!-- commit_ids_reviewed_start -->'
-export const COMMIT_ID_END_TAG = '<!-- commit_ids_reviewed_end -->'
-
-export const REVIEW_STATE_START_TAG = '<!-- review_state_start -->'
-export const REVIEW_STATE_END_TAG = '<!-- review_state_end -->'
+export {
+  COMMIT_ID_END_TAG,
+  COMMIT_ID_START_TAG,
+  REVIEW_STATE_END_TAG,
+  REVIEW_STATE_START_TAG
+} from './commenter-state'
 
 export class Commenter {
   /**
@@ -86,21 +114,11 @@ ${tag}`
   }
 
   getContentWithinTags(content: string, startTag: string, endTag: string) {
-    const start = content.indexOf(startTag)
-    const end = content.indexOf(endTag)
-    if (start >= 0 && end >= 0) {
-      return content.slice(start + startTag.length, end)
-    }
-    return ''
+    return getContentWithinTagAliases(content, startTag, endTag)
   }
 
   removeContentWithinTags(content: string, startTag: string, endTag: string) {
-    const start = content.indexOf(startTag)
-    const end = content.lastIndexOf(endTag)
-    if (start >= 0 && end >= 0) {
-      return content.slice(0, start) + content.slice(end + endTag.length)
-    }
-    return content
+    return removeContentWithinTagAliases(content, startTag, endTag)
   }
 
   getRawSummary(summary: string) {
@@ -144,7 +162,6 @@ ${tag}`
       const pr = await octokit.pulls.get({
         owner: repo.owner,
         repo: repo.repo,
-        // eslint-disable-next-line camelcase
         pull_number: pullNumber
       })
       let body = ''
@@ -162,7 +179,6 @@ ${tag}`
       await octokit.pulls.update({
         owner: repo.owner,
         repo: repo.repo,
-        // eslint-disable-next-line camelcase
         pull_number: pullNumber,
         body: newDescription
       })
@@ -200,38 +216,7 @@ ${COMMENT_TAG}`
   }
 
   async deletePendingReview(pullNumber: number) {
-    try {
-      const reviews = await octokit.pulls.listReviews({
-        owner: repo.owner,
-        repo: repo.repo,
-        // eslint-disable-next-line camelcase
-        pull_number: pullNumber
-      })
-
-      const pendingReview = reviews.data.find(
-        review => review.state === 'PENDING'
-      )
-
-      if (pendingReview) {
-        info(
-          `Deleting pending review for PR #${pullNumber} id: ${pendingReview.id}`
-        )
-        try {
-          await octokit.pulls.deletePendingReview({
-            owner: repo.owner,
-            repo: repo.repo,
-            // eslint-disable-next-line camelcase
-            pull_number: pullNumber,
-            // eslint-disable-next-line camelcase
-            review_id: pendingReview.id
-          })
-        } catch (e) {
-          warning(`Failed to delete pending review: ${e}`)
-        }
-      }
-    } catch (e) {
-      warning(`Failed to list reviews: ${e}`)
-    }
+    await removePendingReview(repo, pullNumber)
   }
 
   private async submitEmptyReview(
@@ -239,21 +224,7 @@ ${COMMENT_TAG}`
     commitId: string,
     body: string
   ): Promise<void> {
-    info(`Submitting empty review for PR #${pullNumber}`)
-    try {
-      await octokit.pulls.createReview({
-        owner: repo.owner,
-        repo: repo.repo,
-        // eslint-disable-next-line camelcase
-        pull_number: pullNumber,
-        // eslint-disable-next-line camelcase
-        commit_id: commitId,
-        event: 'COMMENT',
-        body
-      })
-    } catch (e) {
-      warning(`Failed to submit empty review: ${e}`)
-    }
+    await createEmptyReview(repo, pullNumber, commitId, body)
   }
 
   private async deleteExistingComments(pullNumber: number): Promise<void> {
@@ -265,7 +236,7 @@ ${COMMENT_TAG}`
         comment.endLine
       )
       for (const c of comments) {
-        if (c.body.includes(COMMENT_TAG)) {
+        if (bodyHasTag(c.body, COMMENT_TAG)) {
           info(
             `Deleting review comment for ${comment.path}:${comment.startLine}-${comment.endLine}: ${comment.message}`
           )
@@ -273,7 +244,6 @@ ${COMMENT_TAG}`
             await octokit.pulls.deleteReviewComment({
               owner: repo.owner,
               repo: repo.repo,
-              // eslint-disable-next-line camelcase
               comment_id: c.id
             })
           } catch (e) {
@@ -284,17 +254,21 @@ ${COMMENT_TAG}`
     }
   }
 
-  private generateCommentData(comment: any): any {
-    const commentData: any = {
+  private generateCommentData(comment: {
+    path: string
+    message: string
+    startLine: number
+    endLine: number
+  }): GithubReviewCommentDraft {
+    const commentData: GithubReviewCommentDraft = {
       path: comment.path,
       body: comment.message,
-      line: comment.endLine
+      line: comment.endLine,
+      side: 'RIGHT'
     }
 
     if (comment.startLine !== comment.endLine) {
-      // eslint-disable-next-line camelcase
       commentData.start_line = comment.startLine
-      // eslint-disable-next-line camelcase
       commentData.start_side = 'RIGHT'
     }
 
@@ -310,12 +284,10 @@ ${COMMENT_TAG}`
       info(
         `Creating new review comment for ${comment.path}:${comment.startLine}-${comment.endLine}: ${comment.message}`
       )
-      const commentData: any = {
+      const commentData = {
         owner: repo.owner,
         repo: repo.repo,
-        // eslint-disable-next-line camelcase
         pull_number: pullNumber,
-        // eslint-disable-next-line camelcase
         commit_id: commitId,
         ...this.generateCommentData(comment)
       }
@@ -351,9 +323,7 @@ ${statusMsg}
       const review = await octokit.pulls.createReview({
         owner: repo.owner,
         repo: repo.repo,
-        // eslint-disable-next-line camelcase
         pull_number: pullNumber,
-        // eslint-disable-next-line camelcase
         commit_id: commitId,
         comments: this.reviewCommentsBuffer.map(comment =>
           this.generateCommentData(comment)
@@ -367,9 +337,7 @@ ${statusMsg}
       await octokit.pulls.submitReview({
         owner: repo.owner,
         repo: repo.repo,
-        // eslint-disable-next-line camelcase
         pull_number: pullNumber,
-        // eslint-disable-next-line camelcase
         review_id: review.data.id,
         event: 'COMMENT',
         body
@@ -385,60 +353,16 @@ ${statusMsg}
 
   async reviewCommentReply(
     pullNumber: number,
-    topLevelComment: any,
+    topLevelComment: GithubReviewComment,
     message: string
   ) {
-    const reply = `${COMMENT_GREETING}
-
-${message}
-
-${COMMENT_REPLY_TAG}
-`
-    try {
-      // Post the reply to the user comment
-      await octokit.pulls.createReplyForReviewComment({
-        owner: repo.owner,
-        repo: repo.repo,
-        // eslint-disable-next-line camelcase
-        pull_number: pullNumber,
-        body: reply,
-        // eslint-disable-next-line camelcase
-        comment_id: topLevelComment.id
-      })
-    } catch (error) {
-      warning(`Failed to reply to the top-level comment ${error}`)
-      try {
-        await octokit.pulls.createReplyForReviewComment({
-          owner: repo.owner,
-          repo: repo.repo,
-          // eslint-disable-next-line camelcase
-          pull_number: pullNumber,
-          body: `Could not post the reply to the top-level comment due to the following error: ${error}`,
-          // eslint-disable-next-line camelcase
-          comment_id: topLevelComment.id
-        })
-      } catch (e) {
-        warning(`Failed to reply to the top-level comment ${e}`)
-      }
-    }
-    try {
-      if (topLevelComment.body.includes(COMMENT_TAG)) {
-        // replace COMMENT_TAG with COMMENT_REPLY_TAG in topLevelComment
-        const newBody = topLevelComment.body.replace(
-          COMMENT_TAG,
-          COMMENT_REPLY_TAG
-        )
-        await octokit.pulls.updateReviewComment({
-          owner: repo.owner,
-          repo: repo.repo,
-          // eslint-disable-next-line camelcase
-          comment_id: topLevelComment.id,
-          body: newBody
-        })
-      }
-    } catch (error) {
-      warning(`Failed to update the top-level comment ${error}`)
-    }
+    await sendReviewCommentReply(
+      repo,
+      pullNumber,
+      topLevelComment,
+      message,
+      COMMENT_GREETING
+    )
   }
 
   async getCommentsWithinRange(
@@ -446,16 +370,12 @@ ${COMMENT_REPLY_TAG}
     path: string,
     startLine: number,
     endLine: number
-  ) {
+  ): Promise<GithubReviewComment[]> {
     const comments = await this.listReviewComments(pullNumber)
     return comments.filter(
-      (comment: any) =>
-        comment.path === path &&
-        comment.body !== '' &&
-        ((comment.start_line !== undefined &&
-          comment.start_line >= startLine &&
-          comment.line <= endLine) ||
-          (startLine === endLine && comment.line === endLine))
+      comment =>
+        commentHasContent(comment, path) &&
+        commentSpansRange(comment, startLine, endLine)
     )
   }
 
@@ -464,16 +384,12 @@ ${COMMENT_REPLY_TAG}
     path: string,
     startLine: number,
     endLine: number
-  ) {
+  ): Promise<GithubReviewComment[]> {
     const comments = await this.listReviewComments(pullNumber)
     return comments.filter(
-      (comment: any) =>
-        comment.path === path &&
-        comment.body !== '' &&
-        ((comment.start_line !== undefined &&
-          comment.start_line === startLine &&
-          comment.line === endLine) ||
-          (startLine === endLine && comment.line === endLine))
+      comment =>
+        commentHasContent(comment, path) &&
+        commentMatchesExactRange(comment, startLine, endLine)
     )
   }
 
@@ -483,7 +399,7 @@ ${COMMENT_REPLY_TAG}
     startLine: number,
     endLine: number,
     tag = ''
-  ) {
+  ): Promise<string> {
     const existingComments = await this.getCommentsWithinRange(
       pullNumber,
       path,
@@ -491,7 +407,7 @@ ${COMMENT_REPLY_TAG}
       endLine
     )
     // find all top most comments
-    const topLevelComments = []
+    const topLevelComments: GithubReviewComment[] = []
     for (const comment of existingComments) {
       if (!comment.in_reply_to_id) {
         topLevelComments.push(comment)
@@ -506,7 +422,7 @@ ${COMMENT_REPLY_TAG}
         existingComments,
         topLevelComment
       )
-      if (chain?.includes(tag)) {
+      if (tag === '' || bodyHasTag(chain, tag)) {
         chainNum += 1
         allChains += `Conversation Chain ${chainNum}:
 ${chain}
@@ -517,24 +433,23 @@ ${chain}
     return allChains
   }
 
-  async composeCommentChain(reviewComments: any[], topLevelComment: any) {
-    const conversationChain = reviewComments
-      .filter((cmt: any) => cmt.in_reply_to_id === topLevelComment.id)
-      .map((cmt: any) => `${cmt.user.login}: ${cmt.body}`)
-
-    conversationChain.unshift(
-      `${topLevelComment.user.login}: ${topLevelComment.body}`
-    )
-
-    return conversationChain.join('\n---\n')
+  async composeCommentChain(
+    reviewComments: GithubReviewComment[],
+    topLevelComment: GithubReviewComment
+  ): Promise<string> {
+    return buildCommentChain(reviewComments, topLevelComment)
   }
 
-  async getCommentChain(pullNumber: number, comment: any) {
+  async getCommentChain(
+    pullNumber: number,
+    comment: GithubReviewCommentLike
+  ): Promise<{chain: string; topLevelComment: GithubReviewComment | null}> {
     try {
       const reviewComments = await this.listReviewComments(pullNumber)
+      const normalizedComment = normalizeReviewComment(comment)
       const topLevelComment = await this.getTopLevelComment(
         reviewComments,
-        comment
+        normalizedComment
       )
       const chain = await this.composeCommentChain(
         reviewComments,
@@ -550,57 +465,32 @@ ${chain}
     }
   }
 
-  async getTopLevelComment(reviewComments: any[], comment: any) {
-    let topLevelComment = comment
-
-    while (topLevelComment.in_reply_to_id) {
-      const parentComment = reviewComments.find(
-        (cmt: any) => cmt.id === topLevelComment.in_reply_to_id
-      )
-
-      if (parentComment) {
-        topLevelComment = parentComment
-      } else {
-        break
-      }
-    }
-
-    return topLevelComment
+  async getTopLevelComment(
+    reviewComments: GithubReviewComment[],
+    comment: GithubReviewComment
+  ): Promise<GithubReviewComment> {
+    return resolveTopLevelComment(reviewComments, comment)
   }
 
-  private reviewCommentsCache: Record<number, any[]> = {}
+  private readonly reviewCommentsCache: Record<number, GithubReviewComment[]> =
+    {}
 
-  async listReviewComments(target: number) {
-    if (this.reviewCommentsCache[target]) {
-      return this.reviewCommentsCache[target]
-    }
-
-    const allComments: any[] = []
-    let page = 1
-    try {
-      for (;;) {
+  async listReviewComments(target: number): Promise<GithubReviewComment[]> {
+    return await listPaginatedCached(
+      target,
+      this.reviewCommentsCache,
+      async page => {
         const {data: comments} = await octokit.pulls.listReviewComments({
           owner: repo.owner,
           repo: repo.repo,
-          // eslint-disable-next-line camelcase
           pull_number: target,
           page,
-          // eslint-disable-next-line camelcase
           per_page: 100
         })
-        allComments.push(...comments)
-        page++
-        if (!comments || comments.length < 100) {
-          break
-        }
-      }
-
-      this.reviewCommentsCache[target] = allComments
-      return allComments
-    } catch (e) {
-      warning(`Failed to list review comments: ${e}`)
-      return allComments
-    }
+        return comments.map(normalizeReviewComment)
+      },
+      'review comments'
+    )
   }
 
   async create(body: string, target: number) {
@@ -609,15 +499,15 @@ ${chain}
       const response = await octokit.issues.createComment({
         owner: repo.owner,
         repo: repo.repo,
-        // eslint-disable-next-line camelcase
         issue_number: target,
         body
       })
       // add comment to issueCommentsCache
+      const normalizedComment = normalizeIssueComment(response.data)
       if (this.issueCommentsCache[target]) {
-        this.issueCommentsCache[target].push(response.data)
+        this.issueCommentsCache[target].push(normalizedComment)
       } else {
-        this.issueCommentsCache[target] = [response.data]
+        this.issueCommentsCache[target] = [normalizedComment]
       }
     } catch (e) {
       warning(`Failed to create comment: ${e}`)
@@ -631,7 +521,6 @@ ${chain}
         await octokit.issues.updateComment({
           owner: repo.owner,
           repo: repo.repo,
-          // eslint-disable-next-line camelcase
           comment_id: cmt.id,
           body
         })
@@ -643,11 +532,14 @@ ${chain}
     }
   }
 
-  async findCommentWithTag(tag: string, target: number) {
+  async findCommentWithTag(
+    tag: string,
+    target: number
+  ): Promise<GithubIssueComment | null> {
     try {
       const comments = await this.listComments(target)
       for (const cmt of comments) {
-        if (cmt.body?.includes(tag)) {
+        if (bodyHasTag(cmt.body, tag)) {
           return cmt
         }
       }
@@ -659,82 +551,43 @@ ${chain}
     }
   }
 
-  private issueCommentsCache: Record<number, any[]> = {}
+  private readonly issueCommentsCache: Record<number, GithubIssueComment[]> = {}
 
-  async listComments(target: number) {
-    if (this.issueCommentsCache[target]) {
-      return this.issueCommentsCache[target]
-    }
-
-    const allComments: any[] = []
-    let page = 1
-    try {
-      for (;;) {
+  async listComments(target: number): Promise<GithubIssueComment[]> {
+    return await listPaginatedCached(
+      target,
+      this.issueCommentsCache,
+      async page => {
         const {data: comments} = await octokit.issues.listComments({
           owner: repo.owner,
           repo: repo.repo,
-          // eslint-disable-next-line camelcase
           issue_number: target,
           page,
-          // eslint-disable-next-line camelcase
           per_page: 100
         })
-        allComments.push(...comments)
-        page++
-        if (!comments || comments.length < 100) {
-          break
-        }
-      }
-
-      this.issueCommentsCache[target] = allComments
-      return allComments
-    } catch (e: any) {
-      warning(`Failed to list comments: ${e}`)
-      return allComments
-    }
+        return comments.map(normalizeIssueComment)
+      },
+      'comments'
+    )
   }
 
   // function that takes a comment body and returns the list of commit ids that have been reviewed
   // commit ids are comments between the commit_ids_reviewed_start and commit_ids_reviewed_end markers
   // <!-- [commit_id] -->
   getReviewedCommitIds(commentBody: string): string[] {
-    const start = commentBody.indexOf(COMMIT_ID_START_TAG)
-    const end = commentBody.indexOf(COMMIT_ID_END_TAG)
-    if (start === -1 || end === -1) {
-      return []
-    }
-    const ids = commentBody.substring(start + COMMIT_ID_START_TAG.length, end)
-    // remove the <!-- and --> markers from each id and extract the id and remove empty strings
-    return ids
-      .split('<!--')
-      .map(id => id.replace('-->', '').trim())
-      .filter(id => id !== '')
+    return extractReviewedCommitIds(commentBody)
   }
 
   // get review commit ids comment block from the body as a string
   // including markers
   getReviewedCommitIdsBlock(commentBody: string): string {
-    const start = commentBody.indexOf(COMMIT_ID_START_TAG)
-    const end = commentBody.indexOf(COMMIT_ID_END_TAG)
-    if (start === -1 || end === -1) {
-      return ''
-    }
-    return commentBody.substring(start, end + COMMIT_ID_END_TAG.length)
+    return extractReviewedCommitIdsBlock(commentBody)
   }
 
   // add a commit id to the list of reviewed commit ids
   // if the marker doesn't exist, add it
   addReviewedCommitId(commentBody: string, commitId: string): string {
-    const start = commentBody.indexOf(COMMIT_ID_START_TAG)
-    const end = commentBody.indexOf(COMMIT_ID_END_TAG)
-    if (start === -1 || end === -1) {
-      return `${commentBody}\n${COMMIT_ID_START_TAG}\n<!-- ${commitId} -->\n${COMMIT_ID_END_TAG}`
-    }
-    const ids = commentBody.substring(start + COMMIT_ID_START_TAG.length, end)
-    return `${commentBody.substring(
-      0,
-      start + COMMIT_ID_START_TAG.length
-    )}${ids}<!-- ${commitId} -->\n${commentBody.substring(end)}`
+    return appendReviewedCommitId(commentBody, commitId)
   }
 
   // given a list of commit ids provide the highest commit id that has been reviewed
@@ -742,73 +595,36 @@ ${chain}
     commitIds: string[],
     reviewedCommitIds: string[]
   ): string {
-    for (let i = commitIds.length - 1; i >= 0; i--) {
-      if (reviewedCommitIds.includes(commitIds[i])) {
-        return commitIds[i]
-      }
-    }
-    return ''
+    return resolveHighestReviewedCommitId(commitIds, reviewedCommitIds)
   }
 
   async getAllCommitIds(): Promise<string[]> {
-    const allCommits = []
-    let page = 1
-    let commits
-    if (context?.payload?.pull_request != null) {
-      do {
-        commits = await octokit.pulls.listCommits({
-          owner: repo.owner,
-          repo: repo.repo,
-          // eslint-disable-next-line camelcase
-          pull_number: context.payload.pull_request.number,
-          // eslint-disable-next-line camelcase
-          per_page: 100,
-          page
-        })
-
-        allCommits.push(...commits.data.map(commit => commit.sha))
-        page++
-      } while (commits.data.length > 0)
+    if (context?.payload?.pull_request == null) {
+      return []
     }
 
-    return allCommits
+    const pullNumber = context.payload.pull_request.number
+    return await collectCommitIds(pullNumber, async page => {
+      const commits = await octokit.pulls.listCommits({
+        owner: repo.owner,
+        repo: repo.repo,
+        pull_number: pullNumber,
+        per_page: 100,
+        page
+      })
+
+      return commits.data
+    })
   }
 
   // add in-progress status to the comment body
   addInProgressStatus(commentBody: string, statusMsg: string): string {
-    const start = commentBody.indexOf(IN_PROGRESS_START_TAG)
-    const end = commentBody.indexOf(IN_PROGRESS_END_TAG)
-    // add to the beginning of the comment body if the marker doesn't exist
-    // otherwise do nothing
-    if (start === -1 || end === -1) {
-      return `${IN_PROGRESS_START_TAG}
-
-Currently reviewing new changes in this PR...
-
-${statusMsg}
-
-${IN_PROGRESS_END_TAG}
-
----
-
-${commentBody}`
-    }
-    return commentBody
+    return buildInProgressStatus(commentBody, statusMsg)
   }
 
   // remove in-progress status from the comment body
   removeInProgressStatus(commentBody: string): string {
-    const start = commentBody.indexOf(IN_PROGRESS_START_TAG)
-    const end = commentBody.indexOf(IN_PROGRESS_END_TAG)
-    // remove the in-progress status if the marker exists
-    // otherwise do nothing
-    if (start !== -1 && end !== -1) {
-      return (
-        commentBody.substring(0, start) +
-        commentBody.substring(end + IN_PROGRESS_END_TAG.length)
-      )
-    }
-    return commentBody
+    return stripInProgressStatus(commentBody)
   }
 
   /**
@@ -816,18 +632,7 @@ ${commentBody}`
    * Returns null if no state is found or if the state is invalid
    */
   getReviewState(commentBody: string): string | null {
-    const start = commentBody.indexOf(REVIEW_STATE_START_TAG)
-    const end = commentBody.indexOf(REVIEW_STATE_END_TAG)
-
-    if (start === -1 || end === -1) {
-      return null
-    }
-
-    const stateJson = commentBody.substring(
-      start + REVIEW_STATE_START_TAG.length,
-      end
-    )
-    return stateJson.trim()
+    return extractReviewState(commentBody)
   }
 
   /**
@@ -835,40 +640,13 @@ ${commentBody}`
    * If state markers don't exist, they are added to the end
    */
   setReviewState(commentBody: string, stateJson: string): string {
-    const start = commentBody.indexOf(REVIEW_STATE_START_TAG)
-    const end = commentBody.indexOf(REVIEW_STATE_END_TAG)
-
-    const stateBlock = `${REVIEW_STATE_START_TAG}
-${stateJson}
-${REVIEW_STATE_END_TAG}`
-
-    if (start === -1 || end === -1) {
-      // Add state block to the end of the comment
-      return `${commentBody}\n\n${stateBlock}`
-    }
-
-    // Replace existing state block
-    return (
-      commentBody.substring(0, start) +
-      stateBlock +
-      commentBody.substring(end + REVIEW_STATE_END_TAG.length)
-    )
+    return replaceReviewState(commentBody, stateJson)
   }
 
   /**
    * Removes the review state from the comment body
    */
   removeReviewState(commentBody: string): string {
-    const start = commentBody.indexOf(REVIEW_STATE_START_TAG)
-    const end = commentBody.indexOf(REVIEW_STATE_END_TAG)
-
-    if (start === -1 || end === -1) {
-      return commentBody
-    }
-
-    return (
-      commentBody.substring(0, start) +
-      commentBody.substring(end + REVIEW_STATE_END_TAG.length)
-    )
+    return stripReviewState(commentBody)
   }
 }

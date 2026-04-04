@@ -1,6 +1,7 @@
 // eslint.config.js
+import path from 'node:path'
 import js from '@eslint/js'
-import tseslint from 'typescript-eslint'
+import {configs as tsConfigs, parser as tsParser} from 'typescript-eslint'
 import jestPlugin from 'eslint-plugin-jest'
 import prettierRecommended from 'eslint-plugin-prettier/recommended'
 import importPlugin from 'eslint-plugin-import'
@@ -9,6 +10,8 @@ import globals from 'globals'
 
 // Get GitHub flat configs
 const githubConfigs = githubPlugin.getFlatConfigs()
+const rootDir = path.resolve('.')
+const tsconfigPath = path.join(rootDir, 'tsconfig.eslint.json')
 
 export default [
   // Ignore patterns (replaces .eslintignore)
@@ -20,7 +23,7 @@ export default [
   js.configs.recommended,
 
   // TypeScript ESLint recommended rules
-  ...tseslint.configs.recommended,
+  ...tsConfigs.recommended,
 
   // GitHub recommended config
   githubConfigs.recommended,
@@ -43,7 +46,7 @@ export default [
       'import/resolver': {
         typescript: {
           alwaysTryTypes: true,
-          project: './tsconfig.json'
+          project: tsconfigPath
         },
         node: {
           extensions: ['.js', '.ts']
@@ -58,14 +61,14 @@ export default [
   // Global configuration for all TypeScript files
   {
     name: 'typescript-config',
-    files: ['**/*.ts'],
+    files: ['src/**/*.ts'],
     languageOptions: {
-      parser: tseslint.parser,
+      parser: tsParser,
       parserOptions: {
         ecmaVersion: 'latest',
         sourceType: 'module',
-        projectService: true,
-        tsconfigRootDir: import.meta.dirname
+        project: tsconfigPath,
+        tsconfigRootDir: rootDir
       },
       globals: {
         ...globals.node,
@@ -97,12 +100,11 @@ export default [
     files: ['__tests__/**/*.ts', '**/*.test.ts'],
     ...jestPlugin.configs['flat/recommended'],
     languageOptions: {
-      parser: tseslint.parser,
+      parser: tsParser,
       parserOptions: {
         ecmaVersion: 'latest',
         sourceType: 'module',
-        projectService: true,
-        tsconfigRootDir: import.meta.dirname
+        tsconfigRootDir: rootDir
       },
       globals: {
         ...globals.node,

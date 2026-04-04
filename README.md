@@ -1,6 +1,6 @@
-# CodeReviewer
+# Linewright
 
-# AI-based PR reviewer and summarizer
+Line-by-line pull request review, summaries, and release notes for GitHub.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![GitHub](https://img.shields.io/github/last-commit/Stuhlmuller/ai-pr-reviewer/main?style=flat-square)](https://github.com/Stuhlmuller/ai-pr-reviewer/commits/main)
@@ -8,11 +8,12 @@
 
 ## Overview
 
-CodeReviewer is an AI-based code reviewer and summarizer for GitHub pull
-requests using OpenAI models. It is designed to run as a GitHub Action on pull
-requests and review-comment threads.
+Linewright is a line-by-line pull request reviewer and summarizer for GitHub. It
+runs as a GitHub Action on pull requests and review-comment threads, reviews
+incremental diffs, posts release notes, and keeps the conversation moving inside
+review threads.
 
-## Reviewer Features:
+## Features
 
 - **PR Summarization**: It generates a summary and release notes of the changes
   in the pull request.
@@ -27,9 +28,9 @@ requests and review-comment threads.
 - **Low-cost default model profile**: Defaults to `gpt-4o-mini` for both
   summarization and review so you can validate the workflow inexpensively, then
   override models later if you want deeper review quality.
-- **Chat with bot**: Supports conversation with the bot in the context of lines
-  of code or entire files, useful for providing context, generating test cases,
-  and reducing code complexity.
+- **Review-thread conversation**: Supports conversation with the reviewer in the
+  context of lines of code or entire files, useful for providing context,
+  generating test cases, and reducing code complexity.
 - **Smart review skipping**: By default, skips in-depth review for simple
   changes (e.g. typo fixes) and when changes look good for the most part. It can
   be disabled by setting `review_simple_changes` and `review_comment_lgtm` to
@@ -44,20 +45,20 @@ configure the required environment variables, such as `GITHUB_TOKEN` and
 FAQs, you can refer to the sections below.
 
 - [Overview](#overview)
-- [Reviewer Features](#reviewer-features)
+- [Features](#features)
 - [Install instructions](#install-instructions)
-- [Conversation with CodeReviewer](#conversation-with-codereviewer)
+- [Conversation with Linewright](#conversation-with-linewright)
 - [Examples](#examples)
 - [Contribute](#contribute)
 - [FAQs](#faqs)
 
 ## Install instructions
 
-`ai-pr-reviewer` runs as a GitHub Action. Add the workflow below to your
-repository at `.github/workflows/ai-pr-reviewer.yml`.
+Linewright runs as a GitHub Action. Add the workflow below to your repository at
+`.github/workflows/linewright-review.yml`.
 
 ```yaml
-name: Code Review
+name: Linewright Review
 
 permissions:
   contents: read
@@ -122,7 +123,7 @@ If you want deeper review quality after rollout, a common next step is keeping
 
 See: [action.yml](./action.yml)
 
-Tip: You can change the bot personality by configuring the `system_message`
+Tip: You can change the reviewer personality by configuring the `system_message`
 value. For example, to review docs/blog posts, you can use the following prompt:
 
 <details>
@@ -130,14 +131,15 @@ value. For example, to review docs/blog posts, you can use the following prompt:
 
 ```yaml
 system_message: |
-  You are `@codereviewer` (aka `github-actions[bot]`), a language model
-  trained by OpenAI. Your purpose is to act as a highly experienced
-  DevRel (developer relations) professional with focus on cloud-native
+  You are `@linewright` (aka `github-actions[bot]`), the review desk for
+  this repository. Your purpose is to act as a highly experienced DevRel
+  (developer relations) professional with focus on cloud-native
   infrastructure.
 
   Company context -
-  CodeReviewer is an AI-powered Code reviewer.It boosts code quality and cuts manual effort. Offers context-aware, line-by-line feedback, highlights critical changes,
-  enables bot interaction, and lets you commit suggestions directly from GitHub.
+  Linewright provides crisp, line-by-line feedback on pull requests,
+  highlights consequential changes, and helps teams keep review quality
+  high without turning every comment into a lecture.
 
   When reviewing or generating content focus on key areas such as -
   - Accuracy
@@ -157,15 +159,17 @@ system_message: |
 
 </details>
 
-## Conversation with CodeReviewer
+## Conversation with Linewright
 
 You can reply to a review comment made by this action and get a response based
-on the diff context. Additionally, you can invite the bot to a conversation by
-tagging it in the comment (`@codereviewer`).
+on the diff context. Additionally, you can invite the reviewer into a
+conversation by tagging it in the comment (`@linewright`).
+
+`@codereviewer` is still supported as a legacy alias.
 
 Example:
 
-> @codereviewer Please generate a test plan for this file.
+> @linewright Please generate a test plan for this file.
 
 Note: A review comment is a comment made on a diff or a file in the pull
 request.
@@ -177,8 +181,10 @@ to review documentation, you can ignore PRs that only change the documentation.
 To ignore a PR, add the following keyword in the PR description:
 
 ```text
-@codereviewer: ignore
+@linewright: ignore
 ```
+
+`@codereviewer: ignore` is still supported for backwards compatibility.
 
 ## Examples
 
@@ -214,7 +220,7 @@ PR head in that job. Keep the job limited to calling the action and posting
 comments:
 
 ```yaml
-name: Code Review
+name: Linewright Review
 
 permissions:
   contents: read
@@ -256,10 +262,10 @@ workflow for build/test steps and keep that workflow isolated from secrets.
 See also:
 https://docs.github.com/en/actions/using-workflows/events-that-trigger-workflows#pull_request_target
 
-### Inspect the messages between OpenAI server
+### Inspect model requests
 
 Set `debug: true` in the workflow file to enable debug mode, which will show the
-messages
+outbound model requests and responses.
 
 ### Disclaimer
 

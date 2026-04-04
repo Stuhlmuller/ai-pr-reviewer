@@ -45,7 +45,7 @@ describe('Bot', () => {
       choices: [
         {
           message: {
-            content: 'Review summary'
+            content: 'summary_output_01'
           }
         }
       ]
@@ -68,7 +68,7 @@ describe('Bot', () => {
       false,
       false,
       null,
-      'System prompt',
+      'system_prompt_01',
       'gpt-4o-mini',
       'gpt-4o-mini',
       '0.2',
@@ -85,7 +85,7 @@ describe('Bot', () => {
       new OpenAIOptions('gpt-4o-mini', options.lightTokenLimits)
     )
 
-    const [text, ids] = await bot.chat('Review this patch', {})
+    const [text, ids] = await bot.chat('patch_input_01', {})
 
     expect(mockOpenAI).toHaveBeenCalledWith({
       apiKey: 'test-api-key',
@@ -97,18 +97,18 @@ describe('Bot', () => {
     expect(mockCreate).toHaveBeenCalledWith({
       messages: [
         {
-          content: expect.stringContaining('System prompt'),
+          content: expect.stringContaining('system_prompt_01'),
           role: 'system'
         },
         {
-          content: 'Review this patch',
+          content: 'patch_input_01',
           role: 'user'
         }
       ],
       model: 'gpt-4o-mini',
       temperature: 0.2
     })
-    expect(text).toBe('Review summary')
+    expect(text).toBe('summary_output_01')
     expect(ids.parentMessageId).toBe('chatcmpl_123')
     expect(ids.tokenUsage).toBeDefined()
   })

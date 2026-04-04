@@ -20,14 +20,12 @@ practices.**
 **ALWAYS follow this cycle when implementing new features or fixing bugs:**
 
 1. **🔴 RED - Write a failing test first**
-
    - Write tests in `__tests__/` directory with `*.test.ts` naming pattern
    - Test should fail because the feature doesn't exist yet
    - Run `npm test` to verify the test fails
    - Commit the failing test
 
 2. **🟢 GREEN - Write minimal code to make the test pass**
-
    - Implement only enough code to make the test pass
    - Don't add extra features or "nice-to-haves"
    - Run `npm test` to verify the test passes
@@ -166,7 +164,6 @@ npm run act  # Build, package, and run GitHub Action locally with Act
 ### Entry Point and Flow
 
 1. **main.ts**: Entry point that:
-
    - Creates two Bot instances: `lightBot` (gpt-3.5-turbo for summaries) and
      `heavyBot` (gpt-4 for reviews)
    - Routes to `codeReview()` for PR events or `handleReviewComment()` for
@@ -349,27 +346,22 @@ Main workflow file: `.github/workflows/openai-review.yml`
 **CRITICAL: Follow this checklist before EVERY commit:**
 
 1. **✅ Tests written FIRST** (TDD requirement)
-
    - Did you write a failing test before writing code?
    - Are all tests passing? Run `npm test`
    - Is coverage 80%+? Run `npm run test:coverage`
 
 2. **✅ Code formatted**
-
    - Run `qlty fmt` to auto-format
 
 3. **✅ No lint errors**
-
    - Run `qlty check <path_to_changed_files> --fix --level=low`
    - Replace `<path_to_changed_files>` with actual paths (use
      `git diff --name-only`)
 
 4. **✅ No code smells**
-
    - Run `qlty smells <path_to_changed_files>`
 
 5. **✅ Build successful**
-
    - Run `npm run all` (build, format, lint, package, test)
 
 6. **✅ Commit message follows convention**

@@ -30,14 +30,16 @@ Retry count: ${retryCount}
         return true
       }
     },
-    onSecondaryRateLimit: (retryAfter: number, options: any) => {
+    onSecondaryRateLimit: (retryAfter: number, options: unknown) => {
+      const request = options as {method: string; url: string}
       warning(
-        `SecondaryRateLimit detected for request ${options.method} ${options.url} ; retry after ${retryAfter} seconds`
+        `SecondaryRateLimit detected for request ${request.method} ${request.url} ; retry after ${retryAfter} seconds`
       )
       // if we are doing a POST method on /repos/{owner}/{repo}/pulls/{pull_number}/reviews then we shouldn't retry
+      const reviewUrlPattern = /\/repos\/.*\/.*\/pulls\/.*\/reviews/
       if (
-        options.method === 'POST' &&
-        options.url.match(/\/repos\/.*\/.*\/pulls\/.*\/reviews/)
+        request.method === 'POST' &&
+        reviewUrlPattern.exec(request.url) != null
       ) {
         return false
       }

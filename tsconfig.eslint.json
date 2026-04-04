@@ -1,20 +1,8 @@
 {
+  "extends": "./tsconfig.json",
   "compilerOptions": {
-    "incremental": false,
-    "sourceMap": false,
-    "allowJs": true,
-    "checkJs": false,
-    "moduleResolution": "node",
-    "resolveJsonModule": true,
-    "isolatedModules": true,
-    "target": "ESNext",
-    "module": "ESNext",
-    "outDir": "./lib",
     "rootDir": ".",
-    "strict": true,
-    "noImplicitAny": true,
-    "esModuleInterop": true
+    "noEmit": true
   },
-  "include": ["src/**/*", "__tests__/**/*", "**/*.test.ts"],
-  "exclude": ["dist", "lib", "node_modules"]
+  "include": ["src/**/*.ts", "__tests__/**/*.ts"]
 }

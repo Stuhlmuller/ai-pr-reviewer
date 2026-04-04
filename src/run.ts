@@ -11,6 +11,14 @@ import {Prompts} from './prompts'
 import {codeReview} from './review'
 import {handleReviewComment} from './review-comment'
 
+function formatErrorDetails(error: unknown): string {
+  if (error instanceof Error) {
+    return `${error.message}, backtrace: ${error.stack}`
+  }
+
+  return String(error)
+}
+
 export async function run(): Promise<void> {
   const options: Options = new Options(
     getBooleanInput('debug'),
@@ -59,9 +67,9 @@ export async function run(): Promise<void> {
       options,
       new OpenAIOptions(options.openaiLightModel, options.lightTokenLimits)
     )
-  } catch (e: any) {
+  } catch (e: unknown) {
     warning(
-      `Skipped: failed to create summary bot, please check your openai_api_key: ${e}, backtrace: ${e.stack}`
+      `Skipped: failed to create summary bot, please check your openai_api_key: ${formatErrorDetails(e)}`
     )
     return
   }
@@ -72,9 +80,9 @@ export async function run(): Promise<void> {
       options,
       new OpenAIOptions(options.openaiHeavyModel, options.heavyTokenLimits)
     )
-  } catch (e: any) {
+  } catch (e: unknown) {
     warning(
-      `Skipped: failed to create review bot, please check your openai_api_key: ${e}, backtrace: ${e.stack}`
+      `Skipped: failed to create review bot, please check your openai_api_key: ${formatErrorDetails(e)}`
     )
     return
   }
@@ -92,11 +100,11 @@ export async function run(): Promise<void> {
     } else {
       warning('Skipped: this action only works on push events or pull_request')
     }
-  } catch (e: any) {
+  } catch (e: unknown) {
     if (e instanceof Error) {
       setFailed(`Failed to run: ${e.message}, backtrace: ${e.stack}`)
     } else {
-      setFailed(`Failed to run: ${e}, backtrace: ${e.stack}`)
+      setFailed(`Failed to run: ${String(e)}`)
     }
   }
 }

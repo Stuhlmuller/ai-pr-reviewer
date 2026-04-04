@@ -26,25 +26,25 @@ jest.mock('../src/review-comment', () => ({
 jest.mock('@actions/core', () => ({
   getBooleanInput: jest.fn((name: string) => name === 'enable_resume'),
   getInput: jest.fn((name: string) => {
-    const values: Record<string, string> = {
-      max_files: '0',
-      system_message: 'System prompt',
-      openai_light_model: 'gpt-4o-mini',
-      openai_heavy_model: 'gpt-4o-mini',
-      openai_model_temperature: '0.1',
-      openai_retries: '2',
-      openai_timeout_ms: '30000',
-      openai_concurrency_limit: '6',
-      github_concurrency_limit: '6',
-      openai_base_url: 'https://api.openai.com/v1',
-      language: 'en-US',
-      smart_review_min_lines: '3',
-      max_retry_attempts: '3',
-      summarize: 'summary prompt',
-      summarize_release_notes: 'release notes prompt'
-    }
+    const values = new Map<string, string>([
+      ['max_files', '0'],
+      ['system_message', 'System prompt'],
+      ['openai_light_model', 'gpt-4o-mini'],
+      ['openai_heavy_model', 'gpt-4o-mini'],
+      ['openai_model_temperature', '0.1'],
+      ['openai_retries', '2'],
+      ['openai_timeout_ms', '30000'],
+      ['openai_concurrency_limit', '6'],
+      ['github_concurrency_limit', '6'],
+      ['openai_base_url', 'https://api.openai.com/v1'],
+      ['language', 'en-US'],
+      ['smart_review_min_lines', '3'],
+      ['max_retry_attempts', '3'],
+      ['summarize', 'summary prompt'],
+      ['summarize_release_notes', 'release notes prompt']
+    ])
 
-    return values[name] ?? ''
+    return values.get(name) ?? ''
   }),
   getMultilineInput: jest.fn(() => []),
   info: jest.fn(),
