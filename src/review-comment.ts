@@ -20,34 +20,53 @@ import {getTokenCount} from './tokenizer'
 const context = github_context
 const repo = context.repo
 
+type ReviewCommentContext = {
+  commenter: Commenter
+  inputs: Inputs
+  pullNumber: number
+  pullRequest: NonNullable<typeof context.payload.pull_request>
+  topLevelComment: any
+}
+
+type TokenValidationInput = {
+  commenter: Commenter
+  inputs: Inputs
+  prompts: Prompts
+  options: Options
+  fileDiff: string
+  pullNumber: number
+}
+
+function getValidationError(): string | null {
+  const validations: Array<[boolean, string]> = [
+    [
+      context.eventName !== 'pull_request_review_comment',
+      `${context.eventName} is not a pull_request_review_comment event`
+    ],
+    [!context.payload, `${context.eventName} event is missing payload`],
+    [
+      context.payload?.comment == null,
+      `${context.eventName} event is missing comment`
+    ],
+    [
+      context.payload?.pull_request == null ||
+        context.payload?.repository == null,
+      `${context.eventName} event is missing pull_request`
+    ],
+    [
+      context.payload?.action !== 'created',
+      `${context.eventName} event is not created`
+    ]
+  ]
+
+  const failedValidation = validations.find(([isInvalid]) => isInvalid)
+  return failedValidation ? failedValidation[1] : null
+}
+
 function validateEvent(): boolean {
-  if (context.eventName !== 'pull_request_review_comment') {
-    warning(
-      `Skipped: ${context.eventName} is not a pull_request_review_comment event`
-    )
-    return false
-  }
-
-  if (!context.payload) {
-    warning(`Skipped: ${context.eventName} event is missing payload`)
-    return false
-  }
-
-  if (context.payload.comment == null) {
-    warning(`Skipped: ${context.eventName} event is missing comment`)
-    return false
-  }
-
-  if (
-    context.payload.pull_request == null ||
-    context.payload.repository == null
-  ) {
-    warning(`Skipped: ${context.eventName} event is missing pull_request`)
-    return false
-  }
-
-  if (context.payload.action !== 'created') {
-    warning(`Skipped: ${context.eventName} event is not created`)
+  const validationError = getValidationError()
+  if (validationError != null) {
+    warning(`Skipped: ${validationError}`)
     return false
   }
 
@@ -90,13 +109,10 @@ async function getFileDiff(
 }
 
 async function validateAndPackTokens(
-  commenter: Commenter,
-  inputs: Inputs,
-  prompts: Prompts,
-  options: Options,
-  fileDiff: string,
-  pullNumber: number
+  validationInput: TokenValidationInput
 ): Promise<boolean> {
+  const {commenter, inputs, prompts, options, fileDiff, pullNumber} =
+    validationInput
   let tokens = getTokenCount(prompts.renderComment(inputs))
 
   if (tokens > options.heavyTokenLimits.requestTokens) {
@@ -128,31 +144,37 @@ async function validateAndPackTokens(
   return true
 }
 
-export const handleReviewComment = async (
-  heavyBot: Bot,
-  options: Options,
-  prompts: Prompts
-) => {
-  if (!validateEvent()) {
-    return
-  }
+function isBotComment(commentBody: string): boolean {
+  return (
+    bodyHasTag(commentBody, COMMENT_TAG) ||
+    bodyHasTag(commentBody, COMMENT_REPLY_TAG)
+  )
+}
 
-  // After validateEvent() returns true, we know these are defined
+function shouldReplyToComment(
+  commentBody: string,
+  commentChain: string
+): boolean {
+  return (
+    bodyHasTag(commentChain, COMMENT_TAG) ||
+    bodyHasTag(commentChain, COMMENT_REPLY_TAG) ||
+    bodyIncludesBotHandle(commentBody)
+  )
+}
+
+async function buildReviewCommentContext(): Promise<ReviewCommentContext | null> {
   const comment = context.payload?.comment
   const pullRequest = context.payload?.pull_request
   if (!comment || !pullRequest) {
-    return
+    return null
   }
 
-  const commenter: Commenter = new Commenter()
-  const inputs: Inputs = new Inputs()
+  const commenter = new Commenter()
+  const inputs = new Inputs()
 
-  if (
-    bodyHasTag(comment.body, COMMENT_TAG) ||
-    bodyHasTag(comment.body, COMMENT_REPLY_TAG)
-  ) {
+  if (isBotComment(comment.body)) {
     info(`Skipped: ${context.eventName} event is from the bot itself`)
-    return
+    return null
   }
 
   setupInputsFromContext(commenter, inputs, pullRequest)
@@ -167,48 +189,81 @@ export const handleReviewComment = async (
 
   if (!topLevelComment) {
     warning('Failed to find the top-level comment to reply to')
-    return
+    return null
   }
 
   inputs.commentChain = commentChain
 
-  const shouldReply =
-    bodyHasTag(commentChain, COMMENT_TAG) ||
-    bodyHasTag(commentChain, COMMENT_REPLY_TAG) ||
-    bodyIncludesBotHandle(comment.body)
-
-  if (!shouldReply) {
-    return
+  if (!shouldReplyToComment(comment.body, commentChain)) {
+    return null
   }
 
+  return {
+    commenter,
+    inputs,
+    pullNumber,
+    pullRequest,
+    topLevelComment
+  }
+}
+
+async function resolveFileDiff(
+  reviewContext: ReviewCommentContext
+): Promise<string | null> {
+  const {commenter, inputs, pullNumber, pullRequest, topLevelComment} =
+    reviewContext
   let fileDiff = await getFileDiff(
-    comment.path,
+    inputs.filename,
     pullRequest.base.sha,
     pullRequest.head.sha
   )
 
-  if (inputs.diff.length === 0) {
-    if (fileDiff.length > 0) {
-      inputs.diff = fileDiff
-      fileDiff = ''
-    } else {
-      await commenter.reviewCommentReply(
-        pullNumber,
-        topLevelComment,
-        'Cannot reply to this comment as diff could not be found.'
-      )
-      return
-    }
+  if (inputs.diff.length > 0) {
+    return fileDiff
   }
 
-  const tokensValid = await validateAndPackTokens(
+  if (fileDiff.length > 0) {
+    inputs.diff = fileDiff
+    fileDiff = ''
+    return fileDiff
+  }
+
+  await commenter.reviewCommentReply(
+    pullNumber,
+    topLevelComment,
+    'Cannot reply to this comment as diff could not be found.'
+  )
+  return null
+}
+
+export const handleReviewComment = async (
+  heavyBot: Bot,
+  options: Options,
+  prompts: Prompts
+) => {
+  if (!validateEvent()) {
+    return
+  }
+
+  const reviewContext = await buildReviewCommentContext()
+  if (reviewContext == null) {
+    return
+  }
+
+  const {commenter, inputs, pullNumber, topLevelComment} = reviewContext
+  const fileDiff = await resolveFileDiff(reviewContext)
+  if (fileDiff == null) {
+    return
+  }
+
+  const tokensValid = await validateAndPackTokens({
     commenter,
     inputs,
     prompts,
     options,
     fileDiff,
     pullNumber
-  )
+  })
 
   if (!tokensValid) {
     await commenter.reviewCommentReply(

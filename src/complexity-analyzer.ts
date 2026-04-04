@@ -76,7 +76,11 @@ export class ComplexityAnalyzer {
 
     return {
       issues: sortedIssues,
-      summary: this.generateSummary(functions.length, complexFunctions, issues),
+      summary: generateComplexitySummary(
+        functions.length,
+        complexFunctions,
+        issues
+      ),
       totalFunctions: functions.length,
       complexFunctions,
       averageComplexity: Math.round(avgComplexity * 10) / 10
@@ -89,8 +93,22 @@ export class ComplexityAnalyzer {
     const issues: ComplexityIssue[] = []
 
     for (const func of functions) {
-      this.checkCyclomaticComplexity(func, issues)
-      this.checkCognitiveComplexity(func, issues)
+      this.checkComplexityMetric({
+        func,
+        issues,
+        type: 'cyclomatic',
+        score: func.cyclomaticComplexity,
+        moderateThreshold: this.CYCLOMATIC_THRESHOLD_MODERATE,
+        highThreshold: this.CYCLOMATIC_THRESHOLD_HIGH
+      })
+      this.checkComplexityMetric({
+        func,
+        issues,
+        type: 'cognitive',
+        score: func.cognitiveComplexity,
+        moderateThreshold: this.COGNITIVE_THRESHOLD_MODERATE,
+        highThreshold: this.COGNITIVE_THRESHOLD_HIGH
+      })
       this.checkFunctionLength(func, issues)
       this.checkNestingDepth(func, issues)
       this.checkParameterCount(func, issues)
@@ -99,56 +117,34 @@ export class ComplexityAnalyzer {
     return issues
   }
 
-  private checkCyclomaticComplexity(
-    func: FunctionInfo,
+  private checkComplexityMetric(args: {
+    func: FunctionInfo
     issues: ComplexityIssue[]
-  ): void {
-    if (func.cyclomaticComplexity <= this.CYCLOMATIC_THRESHOLD_MODERATE) {
+    type: 'cyclomatic' | 'cognitive'
+    score: number
+    moderateThreshold: number
+    highThreshold: number
+  }): void {
+    if (args.score <= args.moderateThreshold) {
       return
     }
 
-    issues.push({
-      type: 'cyclomatic',
-      severity:
-        func.cyclomaticComplexity > this.CYCLOMATIC_THRESHOLD_HIGH
-          ? 'high'
-          : 'medium',
-      line: func.startLine,
-      endLine: func.endLine,
-      functionName: func.name,
-      message: `Cyclomatic complexity is ${func.cyclomaticComplexity} (threshold: ${this.CYCLOMATIC_THRESHOLD_MODERATE})`,
-      score: func.cyclomaticComplexity,
-      recommendation: this.getComplexityRecommendation(
-        'cyclomatic',
-        func.cyclomaticComplexity
-      )
+    args.issues.push({
+      type: args.type,
+      severity: args.score > args.highThreshold ? 'high' : 'medium',
+      line: args.func.startLine,
+      endLine: args.func.endLine,
+      functionName: args.func.name,
+      message: `${this.getComplexityLabel(args.type)} is ${args.score} (threshold: ${args.moderateThreshold})`,
+      score: args.score,
+      recommendation: getComplexityRecommendation(args.type, args.score)
     })
   }
 
-  private checkCognitiveComplexity(
-    func: FunctionInfo,
-    issues: ComplexityIssue[]
-  ): void {
-    if (func.cognitiveComplexity <= this.COGNITIVE_THRESHOLD_MODERATE) {
-      return
-    }
-
-    issues.push({
-      type: 'cognitive',
-      severity:
-        func.cognitiveComplexity > this.COGNITIVE_THRESHOLD_HIGH
-          ? 'high'
-          : 'medium',
-      line: func.startLine,
-      endLine: func.endLine,
-      functionName: func.name,
-      message: `Cognitive complexity is ${func.cognitiveComplexity} (threshold: ${this.COGNITIVE_THRESHOLD_MODERATE})`,
-      score: func.cognitiveComplexity,
-      recommendation: this.getComplexityRecommendation(
-        'cognitive',
-        func.cognitiveComplexity
-      )
-    })
+  private getComplexityLabel(type: 'cyclomatic' | 'cognitive'): string {
+    return type === 'cyclomatic'
+      ? 'Cyclomatic complexity'
+      : 'Cognitive complexity'
   }
 
   private checkFunctionLength(
@@ -375,7 +371,7 @@ export class ComplexityAnalyzer {
     functions.push({
       name: currentFunction.name,
       startLine: currentFunction.startLine,
-      endLine,
+      endLine: endLine,
       cyclomaticComplexity: this.calculateCyclomaticComplexity(functionBody),
       cognitiveComplexity: this.calculateCognitiveComplexity(functionBody),
       lines: functionLines.length,
@@ -498,110 +494,14 @@ export class ComplexityAnalyzer {
   }
 
   /**
-   * Generates recommendations based on complexity type and score
-   */
-  private getComplexityRecommendation(
-    type: 'cyclomatic' | 'cognitive',
-    score: number
-  ): string {
-    if (type === 'cyclomatic') {
-      return this.getCyclomaticRecommendation(score)
-    }
-
-    return this.getCognitiveRecommendation(score)
-  }
-
-  private getCyclomaticRecommendation(score: number): string {
-    if (score > 20) {
-      return 'This function is very complex. Consider breaking it down into smaller functions, each handling a single responsibility. Extract complex conditions into well-named helper functions.'
-    }
-
-    return 'Refactor this function by extracting some logic into separate functions. Look for opportunities to simplify conditional logic or use early returns.'
-  }
-
-  private getCognitiveRecommendation(score: number): string {
-    if (score > 30) {
-      return 'This code is difficult to understand. Reduce nesting depth by using guard clauses and early returns. Extract nested blocks into named functions that clearly express intent.'
-    }
-
-    return 'Simplify the logic flow by reducing nesting levels. Consider using guard clauses, extracting nested blocks into functions, or simplifying conditional expressions.'
-  }
-
-  /**
-   * Generates a summary of the complexity analysis
-   */
-  private generateSummary(
-    totalFunctions: number,
-    complexFunctions: number,
-    issues: ComplexityIssue[]
-  ): string {
-    if (issues.length === 0) {
-      return `✅ All ${totalFunctions} functions have acceptable complexity levels`
-    }
-
-    const highSeverity = issues.filter(i => i.severity === 'high').length
-    const mediumSeverity = issues.filter(i => i.severity === 'medium').length
-    const lowSeverity = issues.filter(i => i.severity === 'low').length
-
-    let summary = `Found ${issues.length} complexity issue${
-      issues.length > 1 ? 's' : ''
-    } in ${complexFunctions} of ${totalFunctions} function${
-      totalFunctions > 1 ? 's' : ''
-    }`
-
-    const parts: string[] = []
-    if (highSeverity > 0) parts.push(`${highSeverity} high`)
-    if (mediumSeverity > 0) parts.push(`${mediumSeverity} medium`)
-    if (lowSeverity > 0) parts.push(`${lowSeverity} low`)
-
-    if (parts.length > 0) {
-      summary += ` (${parts.join(', ')} severity)`
-    }
-
-    return summary
-  }
-
-  /**
    * Formats complexity report as markdown for PR comments
    */
   formatReportAsMarkdown(report: ComplexityReport, filename: string): string {
-    if (report.issues.length === 0) {
-      return ''
-    }
-
-    let markdown = `\n### 📊 Complexity Analysis: ${filename}\n\n`
-    markdown += `${report.summary}\n\n`
-
-    if (report.totalFunctions > 0) {
-      markdown += `**Metrics:** ${report.complexFunctions}/${report.totalFunctions} functions need attention • Average complexity: ${report.averageComplexity}\n\n`
-    }
-
-    const issuesByType = new Map<string, ComplexityIssue[]>()
-    for (const issue of report.issues) {
-      const key = issue.type
-      const existingIssues = issuesByType.get(key) || []
-      existingIssues.push(issue)
-      issuesByType.set(key, existingIssues)
-    }
-
-    for (const [type, issues] of issuesByType) {
-      const typeLabel = {
-        cyclomatic: 'Cyclomatic Complexity',
-        cognitive: 'Cognitive Complexity',
-        function_length: 'Function Length',
-        nesting: 'Nesting Depth',
-        parameters: 'Parameter Count'
-      }[type]
-
-      markdown += `**${typeLabel}:**\n`
-      for (const issue of issues) {
-        const icon = {high: '🔴', medium: '🟡', low: '🔵'}[issue.severity]
-        markdown += `- ${icon} \`${issue.functionName}\` (line ${issue.line}): ${issue.message}\n`
-        markdown += `  - ${issue.recommendation}\n`
-      }
-      markdown += '\n'
-    }
-
-    return markdown
+    return formatComplexityReportAsMarkdown(report, filename)
   }
 }
+import {
+  formatComplexityReportAsMarkdown,
+  generateComplexitySummary,
+  getComplexityRecommendation
+} from './complexity-report'

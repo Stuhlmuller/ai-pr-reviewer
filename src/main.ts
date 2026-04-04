@@ -110,7 +110,8 @@ process
     warning(`Unhandled Rejection at Promise: ${reason}, promise is ${p}`)
   })
   .on('uncaughtException', (e: unknown) => {
-    warning(`Uncaught Exception thrown: ${e}, backtrace: ${e.stack}`)
+    const stack = e instanceof Error ? e.stack : undefined
+    warning(`Uncaught Exception thrown: ${String(e)}, backtrace: ${stack}`)
   })
 
 await run()
