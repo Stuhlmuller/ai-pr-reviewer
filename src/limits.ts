@@ -4,7 +4,7 @@ export class TokenLimits {
   responseTokens: number
   knowledgeCutOff: string
 
-  constructor(model = 'gpt-3.5-turbo') {
+  constructor(model = 'gpt-4o-mini') {
     // Updated knowledge cutoff for newer models
     this.knowledgeCutOff = '2024-10-01'
 

@@ -1,4 +1,4 @@
-name: Linewright Review
+name: Internal Linewright Smoke
 
 permissions:
   contents: read
@@ -6,9 +6,11 @@ permissions:
   issues: write
 
 on:
-  pull_request_target:
+  pull_request:
     types: [opened, synchronize, reopened]
   pull_request_review_comment:
+    types: [created]
+  workflow_dispatch:
 
 concurrency:
   group:
@@ -19,13 +21,14 @@ concurrency:
 
 jobs:
   review:
+    if:
+      ${{ github.event_name == 'workflow_dispatch' ||
+      github.event.pull_request.head.repo.fork == false }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
         with:
-          repository: ${{github.event.pull_request.head.repo.full_name}}
-          ref: ${{github.event.pull_request.head.ref}}
-          submodules: false
+          persist-credentials: false
       - uses: ./
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -33,7 +36,8 @@ jobs:
         with:
           debug: true
           review_comment_lgtm: false
-          openai_heavy_model: gpt-4
+          openai_light_model: gpt-4o-mini
+          openai_heavy_model: gpt-4o-mini
           path_filters: |
             !dist/**
             !**/*.lock

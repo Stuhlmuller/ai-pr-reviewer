@@ -3,16 +3,15 @@
 Line-by-line pull request review, summaries, and release notes for GitHub.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![GitHub](https://img.shields.io/github/last-commit/coderabbitai/ai-pr-reviewer/main?style=flat-square)](https://github.com/coderabbitai/ai-pr-reviewer/commits/main)
-[![Coverage](https://img.shields.io/badge/coverage-20%25-red?style=flat-square)](https://github.com/coderabbitai/ai-pr-reviewer)
+[![GitHub](https://img.shields.io/github/last-commit/Stuhlmuller/ai-pr-reviewer/main?style=flat-square)](https://github.com/Stuhlmuller/ai-pr-reviewer/commits/main)
+[![Coverage](https://img.shields.io/badge/coverage-20%25-red?style=flat-square)](https://github.com/Stuhlmuller/ai-pr-reviewer)
 
 ## Overview
 
 Linewright is a line-by-line pull request reviewer and summarizer for GitHub. It
-runs as a GitHub Action, reviews incremental diffs, posts release notes, and can
-keep the conversation going inside review threads. The published action slug
-remains `codereviewer/ai-pr-reviewer@latest` for compatibility while the
-reviewer itself uses the Linewright identity.
+runs as a GitHub Action on pull requests and review-comment threads, reviews
+incremental diffs, posts release notes, and keeps the conversation moving inside
+review threads.
 
 ## Features
 
@@ -23,15 +22,14 @@ reviewer itself uses the Linewright identity.
 - **Continuous, incremental reviews**: Reviews are performed on each commit
   within a pull request, rather than a one-time review on the entire pull
   request.
-- **Reduced noise**: Incremental reviews track changed files between commits and
-  the base of the pull request, which keeps the review focused and keeps model
-  spend predictable.
-- **"Light" model for summary**: Designed to be used with a "light"
-  summarization model (e.g. `gpt-3.5-turbo`) and a "heavy" review model (e.g.
-  `gpt-4`). _For best results, use `gpt-4` as the "heavy" model, as thorough
-  code review needs strong reasoning abilities._
-- **Review-thread conversation**: Supports back-and-forth discussion in the
-  context of lines of code or entire files, useful for adding context,
+- **Cost-effective and reduced noise**: Incremental reviews save on OpenAI costs
+  and reduce noise by tracking changed files between commits and the base of the
+  pull request.
+- **Low-cost default model profile**: Defaults to `gpt-4o-mini` for both
+  summarization and review so you can validate the workflow inexpensively, then
+  override models later if you want deeper review quality.
+- **Review-thread conversation**: Supports conversation with the reviewer in the
+  context of lines of code or entire files, useful for providing context,
   generating test cases, and reducing code complexity.
 - **Smart review skipping**: By default, skips in-depth review for simple
   changes (e.g. typo fixes) and when changes look good for the most part. It can
@@ -56,8 +54,8 @@ FAQs, you can refer to the sections below.
 
 ## Install instructions
 
-Add the following workflow to your repository at
-`.github/workflows/linewright-review.yml`
+Linewright runs as a GitHub Action. Add the workflow below to your repository at
+`.github/workflows/linewright-review.yml`.
 
 ```yaml
 name: Linewright Review
@@ -65,9 +63,11 @@ name: Linewright Review
 permissions:
   contents: read
   pull-requests: write
+  issues: write
 
 on:
-  pull_request:
+  pull_request_target:
+    types: [opened, synchronize, reopened]
   pull_request_review_comment:
     types: [created]
 
@@ -82,7 +82,7 @@ jobs:
   review:
     runs-on: ubuntu-latest
     steps:
-      - uses: codereviewer/ai-pr-reviewer@latest
+      - uses: Stuhlmuller/ai-pr-reviewer@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
@@ -90,10 +90,14 @@ jobs:
           debug: false
           review_simple_changes: false
           review_comment_lgtm: false
+          openai_light_model: gpt-4o-mini
+          openai_heavy_model: gpt-4o-mini
 ```
 
-The action is still published at `codereviewer/ai-pr-reviewer@latest`, so the
-`uses:` line stays the same during the rebrand.
+Important: when you use `pull_request_target`, do not check out the pull request
+head in this job. Keep this review workflow comment-only. If you need to build
+or test forked code, do that in a separate `pull_request` workflow without
+secrets.
 
 #### Environment variables
 
@@ -106,15 +110,14 @@ The action is still published at `codereviewer/ai-pr-reviewer@latest`, so the
   OpenAI API if you have multiple. Please add this key to your GitHub Action
   secrets.
 
-### Models: `gpt-4` and `gpt-3.5-turbo`
+### Models: `gpt-4o-mini` by default
 
-Recommend using `gpt-3.5-turbo` for lighter tasks such as summarizing the
-changes (`openai_light_model` in configuration) and `gpt-4` for more complex
-review and commenting tasks (`openai_heavy_model` in configuration).
+The default action configuration uses `gpt-4o-mini` for both
+`openai_light_model` and `openai_heavy_model` so initial rollout is cheap and
+simple.
 
-Costs: `gpt-3.5-turbo` is dirt cheap. `gpt-4` is orders of magnitude more
-expensive, but the results are vastly superior. We are typically spending $20 a
-day for a 20 developer team with `gpt-4` based review and commenting.
+If you want deeper review quality after rollout, a common next step is keeping
+`gpt-4o-mini` for summaries and switching `openai_heavy_model` to `gpt-4o`.
 
 ### Prompts & Configuration
 
@@ -192,8 +195,8 @@ appreciated.
 
 ### Developing
 
-> First, you'll need to have a reasonably modern version of `node` handy, tested
-> with node 17+.
+> First, you'll need a reasonably modern version of Node.js handy, tested with
+> Node.js 20+.
 
 Install the dependencies
 
@@ -211,10 +214,10 @@ $ npm run build && npm run package
 
 ### Review pull requests from forks
 
-GitHub Actions limits the access of secrets from forked repositories. To enable
-this feature, you need to use the `pull_request_target` event instead of
-`pull_request` in your workflow file. Note that with `pull_request_target`, you
-need extra configuration to ensure checking out the right commit:
+GitHub Actions limits secret access on forked pull requests. To review forked
+PRs, use `pull_request_target` for the review workflow and do not check out the
+PR head in that job. Keep the job limited to calling the action and posting
+comments:
 
 ```yaml
 name: Linewright Review
@@ -222,6 +225,7 @@ name: Linewright Review
 permissions:
   contents: read
   pull-requests: write
+  issues: write
 
 on:
   pull_request_target:
@@ -240,7 +244,7 @@ jobs:
   review:
     runs-on: ubuntu-latest
     steps:
-      - uses: codereviewer/ai-pr-reviewer@latest
+      - uses: Stuhlmuller/ai-pr-reviewer@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
@@ -248,7 +252,12 @@ jobs:
           debug: false
           review_simple_changes: false
           review_comment_lgtm: false
+          openai_light_model: gpt-4o-mini
+          openai_heavy_model: gpt-4o-mini
 ```
+
+If you also need to run tests against forked code, add a separate `pull_request`
+workflow for build/test steps and keep that workflow isolated from secrets.
 
 See also:
 https://docs.github.com/en/actions/using-workflows/events-that-trigger-workflows#pull_request_target

@@ -3,12 +3,12 @@ import {TokenLimits} from '../src/limits'
 
 describe('TokenLimits', () => {
   describe('constructor', () => {
-    test('should initialize with default gpt-3.5-turbo model', () => {
+    test('should initialize with default gpt-4o-mini model', () => {
       const limits = new TokenLimits()
-      expect(limits.maxTokens).toBe(16385)
-      expect(limits.responseTokens).toBe(4096)
-      expect(limits.requestTokens).toBe(12189) // 16385 - 4096 - 100
-      expect(limits.knowledgeCutOff).toBe('2021-09-01')
+      expect(limits.maxTokens).toBe(128000)
+      expect(limits.responseTokens).toBe(16384)
+      expect(limits.requestTokens).toBe(111516) // 128000 - 16384 - 100
+      expect(limits.knowledgeCutOff).toBe('2024-10-01')
     })
 
     test('should initialize with gpt-3.5-turbo model explicitly', () => {
@@ -165,7 +165,7 @@ describe('TokenLimits', () => {
       const limits = new TokenLimits()
       const result = limits.string()
       expect(result).toBe(
-        'max_tokens=16385, request_tokens=12189, response_tokens=4096'
+        'max_tokens=128000, request_tokens=111516, response_tokens=16384'
       )
     })
 

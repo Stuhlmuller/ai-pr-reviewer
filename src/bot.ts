@@ -1,13 +1,7 @@
 import './fetch-polyfill'
 
 import {info, setFailed, warning} from '@actions/core'
-import {
-  ChatGPTAPI,
-  ChatGPTError,
-  ChatMessage,
-  SendMessageOptions
-} from 'chatgpt'
-import pRetry from 'p-retry'
+import OpenAI from 'openai'
 import {OpenAIOptions, Options} from './options'
 import {getTokenCount} from './tokenizer'
 import type {TokenUsage} from './ai-provider'
@@ -20,7 +14,7 @@ export interface Ids {
 }
 
 export class Bot {
-  private readonly api: ChatGPTAPI | null = null // not free
+  private readonly api: OpenAI | null = null
 
   private readonly options: Options
 
@@ -35,19 +29,15 @@ Current date: ${currentDate}
 IMPORTANT: Entire response must be in the language with ISO code: ${options.language}
 `
 
-      this.api = new ChatGPTAPI({
-        apiBaseUrl: options.apiBaseUrl,
-        systemMessage,
+      this.api = new OpenAI({
         apiKey: process.env.OPENAI_API_KEY,
-        apiOrg: process.env.OPENAI_API_ORG ?? undefined,
-        debug: options.debug,
-        maxModelTokens: openaiOptions.tokenLimits.maxTokens,
-        maxResponseTokens: openaiOptions.tokenLimits.responseTokens,
-        completionParams: {
-          temperature: options.openaiModelTemperature,
-          model: openaiOptions.model
-        }
+        baseURL: options.apiBaseUrl,
+        maxRetries: options.openaiRetries,
+        organization: process.env.OPENAI_API_ORG ?? undefined,
+        timeout: options.openaiTimeoutMS
       })
+      this.systemMessage = systemMessage
+      this.model = openaiOptions.model
     } else {
       const err =
         "Unable to initialize the OpenAI API, both 'OPENAI_API_KEY' environment variable are not available"
@@ -55,15 +45,18 @@ IMPORTANT: Entire response must be in the language with ISO code: ${options.lang
     }
   }
 
+  private readonly systemMessage: string = ''
+
+  private readonly model: string = 'gpt-4o-mini'
+
   chat = async (message: string, ids: Ids): Promise<[string, Ids]> => {
     let res: [string, Ids] = ['', {}]
     try {
       res = await this.chat_(message, ids)
       return res
     } catch (e: unknown) {
-      if (e instanceof ChatGPTError) {
-        warning(`Failed to chat: ${e.message}, backtrace: ${e.stack}`)
-      }
+      const error = e instanceof Error ? e : new Error(String(e))
+      warning(`Failed to chat: ${error.message}, backtrace: ${error.stack}`)
       return res
     }
   }
@@ -78,44 +71,43 @@ IMPORTANT: Entire response must be in the language with ISO code: ${options.lang
       return ['', {}]
     }
 
-    let response: ChatMessage | undefined
+    let responseText = ''
+    let responseId: string | undefined
 
     if (this.api != null) {
-      const opts: SendMessageOptions = {
-        timeoutMs: this.options.openaiTimeoutMS
-      }
-      if (ids.parentMessageId) {
-        opts.parentMessageId = ids.parentMessageId
-      }
       try {
-        response = await pRetry(() => this.api!.sendMessage(message, opts), {
-          retries: this.options.openaiRetries
+        const response = await this.api.chat.completions.create({
+          messages: [
+            {
+              content: this.systemMessage,
+              role: 'system'
+            },
+            {
+              content: message,
+              role: 'user'
+            }
+          ],
+          model: this.model,
+          temperature: this.options.openaiModelTemperature
         })
-      } catch (e: unknown) {
-        if (e instanceof ChatGPTError) {
-          info(
-            `response: ${JSON.stringify(
-              response
-            )}, failed to send message to openai: ${e.message}, backtrace: ${
-              e.stack
-            }`
-          )
+
+        responseId = response.id
+        const content = response.choices[0]?.message?.content
+        if (typeof content === 'string') {
+          responseText = content
         }
+      } catch (e: unknown) {
+        const error = e instanceof Error ? e : new Error(String(e))
+        info(
+          `failed to send message to openai: ${error.message}, backtrace: ${error.stack}`
+        )
       }
       const end = Date.now()
-      info(`response: ${JSON.stringify(response)}`)
-      info(
-        `openai sendMessage (including retries) response time: ${
-          end - start
-        } ms`
-      )
+      info(`openai chat.completions.create response time: ${end - start} ms`)
     } else {
       setFailed('The OpenAI API is not initialized')
     }
-    let responseText = ''
-    if (response != null) {
-      responseText = response.text
-    } else {
+    if (!responseText) {
       warning('openai response is null')
     }
     // remove the prefix "with " in the response
@@ -142,8 +134,7 @@ IMPORTANT: Entire response must be in the language with ISO code: ${options.lang
     }
 
     const newIds: Ids = {
-      parentMessageId: response?.id,
-      conversationId: response?.conversationId,
+      parentMessageId: responseId ?? ids.parentMessageId,
       tokenUsage
     }
     return [responseText, newIds]
