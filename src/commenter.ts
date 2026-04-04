@@ -1,5 +1,4 @@
 import {getInput, info, warning} from '@actions/core'
-// eslint-disable-next-line camelcase
 import {context as github_context} from '@actions/github'
 import {BOT_NAME} from './brand'
 import {
@@ -14,34 +13,34 @@ import {
 } from './commenter-helpers'
 import {
   bodyHasTag,
-  COMMENT_REPLY_TAG,
   COMMENT_TAG,
   DESCRIPTION_END_TAG,
   DESCRIPTION_START_TAG,
   getContentWithinTagAliases,
-  IN_PROGRESS_END_TAG,
-  IN_PROGRESS_START_TAG,
   RAW_SUMMARY_END_TAG,
   RAW_SUMMARY_START_TAG,
   removeContentWithinTagAliases,
   SHORT_SUMMARY_END_TAG,
-  SHORT_SUMMARY_START_TAG,
-  SUMMARIZE_TAG
+  SHORT_SUMMARY_START_TAG
 } from './comment-tags'
+import {
+  normalizeIssueComment,
+  normalizeReviewComment,
+  type GithubIssueComment,
+  type GithubReviewComment,
+  type GithubReviewCommentDraft,
+  type GithubReviewCommentLike
+} from './github-types'
 import {
   addInProgressStatus as buildInProgressStatus,
   addReviewedCommitId as appendReviewedCommitId,
   collectCommitIds,
-  COMMIT_ID_END_TAG,
-  COMMIT_ID_START_TAG,
   getHighestReviewedCommitId as resolveHighestReviewedCommitId,
   getReviewState as extractReviewState,
   getReviewedCommitIds as extractReviewedCommitIds,
   getReviewedCommitIdsBlock as extractReviewedCommitIdsBlock,
   removeInProgressStatus as stripInProgressStatus,
   removeReviewState as stripReviewState,
-  REVIEW_STATE_END_TAG,
-  REVIEW_STATE_START_TAG,
   setReviewState as replaceReviewState
 } from './commenter-state'
 import {
@@ -51,7 +50,6 @@ import {
 import {reviewCommentReply as sendReviewCommentReply} from './commenter-replies'
 import {octokit} from './octokit'
 
-// eslint-disable-next-line camelcase
 const context = github_context
 const repo = context.repo
 
@@ -164,7 +162,6 @@ ${tag}`
       const pr = await octokit.pulls.get({
         owner: repo.owner,
         repo: repo.repo,
-        // eslint-disable-next-line camelcase
         pull_number: pullNumber
       })
       let body = ''
@@ -182,7 +179,6 @@ ${tag}`
       await octokit.pulls.update({
         owner: repo.owner,
         repo: repo.repo,
-        // eslint-disable-next-line camelcase
         pull_number: pullNumber,
         body: newDescription
       })
@@ -248,7 +244,6 @@ ${COMMENT_TAG}`
             await octokit.pulls.deleteReviewComment({
               owner: repo.owner,
               repo: repo.repo,
-              // eslint-disable-next-line camelcase
               comment_id: c.id
             })
           } catch (e) {
@@ -259,17 +254,21 @@ ${COMMENT_TAG}`
     }
   }
 
-  private generateCommentData(comment: any): any {
-    const commentData: any = {
+  private generateCommentData(comment: {
+    path: string
+    message: string
+    startLine: number
+    endLine: number
+  }): GithubReviewCommentDraft {
+    const commentData: GithubReviewCommentDraft = {
       path: comment.path,
       body: comment.message,
-      line: comment.endLine
+      line: comment.endLine,
+      side: 'RIGHT'
     }
 
     if (comment.startLine !== comment.endLine) {
-      // eslint-disable-next-line camelcase
       commentData.start_line = comment.startLine
-      // eslint-disable-next-line camelcase
       commentData.start_side = 'RIGHT'
     }
 
@@ -285,12 +284,10 @@ ${COMMENT_TAG}`
       info(
         `Creating new review comment for ${comment.path}:${comment.startLine}-${comment.endLine}: ${comment.message}`
       )
-      const commentData: any = {
+      const commentData = {
         owner: repo.owner,
         repo: repo.repo,
-        // eslint-disable-next-line camelcase
         pull_number: pullNumber,
-        // eslint-disable-next-line camelcase
         commit_id: commitId,
         ...this.generateCommentData(comment)
       }
@@ -326,9 +323,7 @@ ${statusMsg}
       const review = await octokit.pulls.createReview({
         owner: repo.owner,
         repo: repo.repo,
-        // eslint-disable-next-line camelcase
         pull_number: pullNumber,
-        // eslint-disable-next-line camelcase
         commit_id: commitId,
         comments: this.reviewCommentsBuffer.map(comment =>
           this.generateCommentData(comment)
@@ -342,9 +337,7 @@ ${statusMsg}
       await octokit.pulls.submitReview({
         owner: repo.owner,
         repo: repo.repo,
-        // eslint-disable-next-line camelcase
         pull_number: pullNumber,
-        // eslint-disable-next-line camelcase
         review_id: review.data.id,
         event: 'COMMENT',
         body
@@ -360,7 +353,7 @@ ${statusMsg}
 
   async reviewCommentReply(
     pullNumber: number,
-    topLevelComment: any,
+    topLevelComment: GithubReviewComment,
     message: string
   ) {
     await sendReviewCommentReply(
@@ -377,10 +370,10 @@ ${statusMsg}
     path: string,
     startLine: number,
     endLine: number
-  ) {
+  ): Promise<GithubReviewComment[]> {
     const comments = await this.listReviewComments(pullNumber)
     return comments.filter(
-      (comment: any) =>
+      comment =>
         commentHasContent(comment, path) &&
         commentSpansRange(comment, startLine, endLine)
     )
@@ -391,10 +384,10 @@ ${statusMsg}
     path: string,
     startLine: number,
     endLine: number
-  ) {
+  ): Promise<GithubReviewComment[]> {
     const comments = await this.listReviewComments(pullNumber)
     return comments.filter(
-      (comment: any) =>
+      comment =>
         commentHasContent(comment, path) &&
         commentMatchesExactRange(comment, startLine, endLine)
     )
@@ -406,7 +399,7 @@ ${statusMsg}
     startLine: number,
     endLine: number,
     tag = ''
-  ) {
+  ): Promise<string> {
     const existingComments = await this.getCommentsWithinRange(
       pullNumber,
       path,
@@ -414,7 +407,7 @@ ${statusMsg}
       endLine
     )
     // find all top most comments
-    const topLevelComments = []
+    const topLevelComments: GithubReviewComment[] = []
     for (const comment of existingComments) {
       if (!comment.in_reply_to_id) {
         topLevelComments.push(comment)
@@ -440,16 +433,23 @@ ${chain}
     return allChains
   }
 
-  async composeCommentChain(reviewComments: any[], topLevelComment: any) {
+  async composeCommentChain(
+    reviewComments: GithubReviewComment[],
+    topLevelComment: GithubReviewComment
+  ): Promise<string> {
     return buildCommentChain(reviewComments, topLevelComment)
   }
 
-  async getCommentChain(pullNumber: number, comment: any) {
+  async getCommentChain(
+    pullNumber: number,
+    comment: GithubReviewCommentLike
+  ): Promise<{chain: string; topLevelComment: GithubReviewComment | null}> {
     try {
       const reviewComments = await this.listReviewComments(pullNumber)
+      const normalizedComment = normalizeReviewComment(comment)
       const topLevelComment = await this.getTopLevelComment(
         reviewComments,
-        comment
+        normalizedComment
       )
       const chain = await this.composeCommentChain(
         reviewComments,
@@ -465,13 +465,17 @@ ${chain}
     }
   }
 
-  async getTopLevelComment(reviewComments: any[], comment: any) {
+  async getTopLevelComment(
+    reviewComments: GithubReviewComment[],
+    comment: GithubReviewComment
+  ): Promise<GithubReviewComment> {
     return resolveTopLevelComment(reviewComments, comment)
   }
 
-  private reviewCommentsCache: Record<number, any[]> = {}
+  private readonly reviewCommentsCache: Record<number, GithubReviewComment[]> =
+    {}
 
-  async listReviewComments(target: number) {
+  async listReviewComments(target: number): Promise<GithubReviewComment[]> {
     return await listPaginatedCached(
       target,
       this.reviewCommentsCache,
@@ -479,13 +483,11 @@ ${chain}
         const {data: comments} = await octokit.pulls.listReviewComments({
           owner: repo.owner,
           repo: repo.repo,
-          // eslint-disable-next-line camelcase
           pull_number: target,
           page,
-          // eslint-disable-next-line camelcase
           per_page: 100
         })
-        return comments
+        return comments.map(normalizeReviewComment)
       },
       'review comments'
     )
@@ -497,15 +499,15 @@ ${chain}
       const response = await octokit.issues.createComment({
         owner: repo.owner,
         repo: repo.repo,
-        // eslint-disable-next-line camelcase
         issue_number: target,
         body
       })
       // add comment to issueCommentsCache
+      const normalizedComment = normalizeIssueComment(response.data)
       if (this.issueCommentsCache[target]) {
-        this.issueCommentsCache[target].push(response.data)
+        this.issueCommentsCache[target].push(normalizedComment)
       } else {
-        this.issueCommentsCache[target] = [response.data]
+        this.issueCommentsCache[target] = [normalizedComment]
       }
     } catch (e) {
       warning(`Failed to create comment: ${e}`)
@@ -519,7 +521,6 @@ ${chain}
         await octokit.issues.updateComment({
           owner: repo.owner,
           repo: repo.repo,
-          // eslint-disable-next-line camelcase
           comment_id: cmt.id,
           body
         })
@@ -531,7 +532,10 @@ ${chain}
     }
   }
 
-  async findCommentWithTag(tag: string, target: number) {
+  async findCommentWithTag(
+    tag: string,
+    target: number
+  ): Promise<GithubIssueComment | null> {
     try {
       const comments = await this.listComments(target)
       for (const cmt of comments) {
@@ -547,9 +551,9 @@ ${chain}
     }
   }
 
-  private issueCommentsCache: Record<number, any[]> = {}
+  private readonly issueCommentsCache: Record<number, GithubIssueComment[]> = {}
 
-  async listComments(target: number) {
+  async listComments(target: number): Promise<GithubIssueComment[]> {
     return await listPaginatedCached(
       target,
       this.issueCommentsCache,
@@ -557,13 +561,11 @@ ${chain}
         const {data: comments} = await octokit.issues.listComments({
           owner: repo.owner,
           repo: repo.repo,
-          // eslint-disable-next-line camelcase
           issue_number: target,
           page,
-          // eslint-disable-next-line camelcase
           per_page: 100
         })
-        return comments
+        return comments.map(normalizeIssueComment)
       },
       'comments'
     )
@@ -606,7 +608,6 @@ ${chain}
       const commits = await octokit.pulls.listCommits({
         owner: repo.owner,
         repo: repo.repo,
-        // eslint-disable-next-line camelcase
         pull_number: pullNumber,
         per_page: 100,
         page

@@ -1,5 +1,4 @@
 import {info, warning} from '@actions/core'
-// eslint-disable-next-line camelcase
 import {context as github_context} from '@actions/github'
 import {type Bot} from './bot'
 import {
@@ -10,13 +9,13 @@ import {
   SUMMARIZE_TAG
 } from './commenter'
 import {bodyIncludesBotHandle} from './brand'
+import {type GithubReviewComment} from './github-types'
 import {Inputs} from './inputs'
 import {octokit} from './octokit'
 import {type Options} from './options'
 import {type Prompts} from './prompts'
 import {getTokenCount} from './tokenizer'
 
-// eslint-disable-next-line camelcase
 const context = github_context
 const repo = context.repo
 
@@ -25,7 +24,7 @@ type ReviewCommentContext = {
   inputs: Inputs
   pullNumber: number
   pullRequest: NonNullable<typeof context.payload.pull_request>
-  topLevelComment: any
+  topLevelComment: GithubReviewComment
 }
 
 type TokenValidationInput = {

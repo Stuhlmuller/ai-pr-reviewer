@@ -1,9 +1,9 @@
 import {error, info, warning} from '@actions/core'
-// eslint-disable-next-line camelcase
 import {context as github_context} from '@actions/github'
 import pLimit from 'p-limit'
 import {type Bot} from './bot'
 import {Commenter, SUMMARIZE_TAG} from './commenter'
+import {type GithubCommitRef, type GithubPullRequestFile} from './github-types'
 import {
   applySmartSkipping,
   bodyShouldBeIgnored,
@@ -26,7 +26,6 @@ import {
 } from './review-state'
 import {type FileChange, type Summary} from './review-types'
 
-// eslint-disable-next-line camelcase
 const context = github_context
 
 async function getHighestReviewedCommitId(
@@ -265,7 +264,7 @@ async function loadExistingSummaryComment(
 }
 
 function logSmartSkipping(
-  smartSkippedFiles: any[],
+  smartSkippedFiles: GithubPullRequestFile[],
   skipReasons: Map<string, string>
 ): void {
   info(`Smart skipping: ${smartSkippedFiles.length} files skipped`)
@@ -275,7 +274,7 @@ function logSmartSkipping(
 
   info('Skipped files:')
   for (const file of smartSkippedFiles) {
-    const reason = skipReasons.get(file.filename) || 'unknown reason'
+    const reason = skipReasons.get(file.filename) ?? 'unknown reason'
     info(`  - ${file.filename}: ${reason}`)
   }
 }
@@ -284,7 +283,7 @@ async function prepareFilesForReview(
   commenter: Commenter,
   options: Options,
   githubConcurrencyLimit: ReturnType<typeof pLimit>
-): Promise<{commits: any[]; filesAndChanges: FileChange[]} | null> {
+): Promise<{commits: GithubCommitRef[]; filesAndChanges: FileChange[]} | null> {
   const highestReviewedCommitId = await getHighestReviewedCommitId(commenter)
   const diffResult = await fetchDiffsAndFilterFiles(
     highestReviewedCommitId,
@@ -423,7 +422,7 @@ async function finalizeReviewRun(args: {
   statusMsg: string
   summaries: Summary[]
   summarizeComment: string
-  commits: any[]
+  commits: GithubCommitRef[]
   pullNumber: number
   existingSummarizeCmtBody: string
   headSha: string

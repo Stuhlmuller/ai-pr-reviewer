@@ -5,6 +5,7 @@ import {
   bodyHasTag,
   replaceTagAlias
 } from './comment-tags'
+import {type GithubReviewComment} from './github-types'
 import {octokit} from './octokit'
 
 interface RepoRef {
@@ -15,7 +16,7 @@ interface RepoRef {
 export async function reviewCommentReply(
   repo: RepoRef,
   pullNumber: number,
-  topLevelComment: any,
+  topLevelComment: GithubReviewComment,
   message: string,
   commentGreeting: string
 ): Promise<void> {
@@ -30,10 +31,8 @@ ${COMMENT_REPLY_TAG}
     await octokit.pulls.createReplyForReviewComment({
       owner: repo.owner,
       repo: repo.repo,
-      // eslint-disable-next-line camelcase
       pull_number: pullNumber,
       body: reply,
-      // eslint-disable-next-line camelcase
       comment_id: topLevelComment.id
     })
   } catch (error) {
@@ -42,10 +41,8 @@ ${COMMENT_REPLY_TAG}
       await octokit.pulls.createReplyForReviewComment({
         owner: repo.owner,
         repo: repo.repo,
-        // eslint-disable-next-line camelcase
         pull_number: pullNumber,
         body: `Could not post the reply to the top-level comment due to the following error: ${String(error)}`,
-        // eslint-disable-next-line camelcase
         comment_id: topLevelComment.id
       })
     } catch (replyError) {
@@ -66,7 +63,6 @@ ${COMMENT_REPLY_TAG}
     await octokit.pulls.updateReviewComment({
       owner: repo.owner,
       repo: repo.repo,
-      // eslint-disable-next-line camelcase
       comment_id: topLevelComment.id,
       body: newBody
     })

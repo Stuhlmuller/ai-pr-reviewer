@@ -14,7 +14,6 @@ export async function deletePendingReview(
     const reviews = await octokit.pulls.listReviews({
       owner: repo.owner,
       repo: repo.repo,
-      // eslint-disable-next-line camelcase
       pull_number: pullNumber
     })
     const pendingReview = reviews.data.find(
@@ -32,9 +31,7 @@ export async function deletePendingReview(
       await octokit.pulls.deletePendingReview({
         owner: repo.owner,
         repo: repo.repo,
-        // eslint-disable-next-line camelcase
         pull_number: pullNumber,
-        // eslint-disable-next-line camelcase
         review_id: pendingReview.id
       })
     } catch (error) {
@@ -56,9 +53,7 @@ export async function submitEmptyReview(
     await octokit.pulls.createReview({
       owner: repo.owner,
       repo: repo.repo,
-      // eslint-disable-next-line camelcase
       pull_number: pullNumber,
-      // eslint-disable-next-line camelcase
       commit_id: commitId,
       event: 'COMMENT',
       body

@@ -36,9 +36,10 @@ Retry count: ${retryCount}
         `SecondaryRateLimit detected for request ${request.method} ${request.url} ; retry after ${retryAfter} seconds`
       )
       // if we are doing a POST method on /repos/{owner}/{repo}/pulls/{pull_number}/reviews then we shouldn't retry
+      const reviewUrlPattern = /\/repos\/.*\/.*\/pulls\/.*\/reviews/
       if (
         request.method === 'POST' &&
-        request.url.match(/\/repos\/.*\/.*\/pulls\/.*\/reviews/)
+        reviewUrlPattern.exec(request.url) != null
       ) {
         return false
       }

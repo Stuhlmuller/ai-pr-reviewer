@@ -1,7 +1,7 @@
 import {info, warning} from '@actions/core'
-// eslint-disable-next-line camelcase
 import {context as github_context} from '@actions/github'
 import {type Bot} from './bot'
+import {type GithubPullRequestFile} from './github-types'
 import {
   Commenter,
   RAW_SUMMARY_END_TAG,
@@ -19,7 +19,6 @@ import {SecurityScanner} from './security-scanner'
 import {bodyIncludesIgnoreKeyword, RELEASE_NOTES_TITLE} from './brand'
 import {createSkipAnalyzer, type SkipConfig} from './skip-logic'
 
-// eslint-disable-next-line camelcase
 const context = github_context
 
 export function bodyShouldBeIgnored(description: string): boolean {
@@ -27,9 +26,13 @@ export function bodyShouldBeIgnored(description: string): boolean {
 }
 
 export function applySmartSkipping(
-  files: any[],
+  files: GithubPullRequestFile[],
   options: Options
-): {selected: any[]; skipped: any[]; skipReasons: Map<string, string>} {
+): {
+  selected: GithubPullRequestFile[]
+  skipped: GithubPullRequestFile[]
+  skipReasons: Map<string, string>
+} {
   const skipConfig: SkipConfig = {
     skipGeneratedFiles: options.smartReviewSkipGenerated,
     skipTrivialChanges: options.smartReviewSkipTrivial,
@@ -42,15 +45,14 @@ export function applySmartSkipping(
   }
 
   const skipAnalyzer = createSkipAnalyzer(skipConfig)
-  const selected: any[] = []
-  const skipped: any[] = []
+  const selected: GithubPullRequestFile[] = []
+  const skipped: GithubPullRequestFile[] = []
   const skipReasons = new Map<string, string>()
 
   for (const file of files) {
     const evaluation = skipAnalyzer.evaluateFile(
       file.filename,
-      file.patch ?? '',
-      undefined
+      file.patch ?? ''
     )
 
     if (!evaluation.shouldSkip) {
@@ -158,6 +160,58 @@ export async function runAnalyzers(
   return analyzerReport
 }
 
+async function maybeUpdateReleaseNotes(
+  heavyBot: Bot,
+  commenter: Commenter,
+  inputs: Inputs,
+  prompts: Prompts,
+  options: Options
+): Promise<void> {
+  if (options.disableReleaseNotes) {
+    return
+  }
+
+  const [releaseNotesResponse] = await heavyBot.chat(
+    prompts.renderSummarizeReleaseNotes(inputs),
+    {}
+  )
+  if (releaseNotesResponse === '') {
+    info('release notes: nothing obtained from openai')
+    return
+  }
+
+  const pullRequest = context.payload.pull_request
+  if (pullRequest == null) {
+    return
+  }
+
+  const message = `${RELEASE_NOTES_TITLE}\n\n${releaseNotesResponse}`
+  try {
+    await commenter.updateDescription(pullRequest.number, message)
+  } catch (error) {
+    warning(
+      `release notes: error from github: ${
+        error instanceof Error ? error.message : String(error)
+      }`
+    )
+  }
+}
+
+function buildFinalSummaryComment(
+  summarizeFinalResponse: string,
+  inputs: Inputs
+): string {
+  const analyzerResults = inputs.analyzerResults ?? ''
+  return `${summarizeFinalResponse}${analyzerResults}
+${RAW_SUMMARY_START_TAG}
+${inputs.rawSummary}
+${RAW_SUMMARY_END_TAG}
+${SHORT_SUMMARY_START_TAG}
+${inputs.shortSummary}
+${SHORT_SUMMARY_END_TAG}
+`
+}
+
 export async function generateFinalSummaries(
   heavyBot: Bot,
   commenter: Commenter,
@@ -173,28 +227,7 @@ export async function generateFinalSummaries(
     info('summarize: nothing obtained from openai')
   }
 
-  if (!options.disableReleaseNotes) {
-    const [releaseNotesResponse] = await heavyBot.chat(
-      prompts.renderSummarizeReleaseNotes(inputs),
-      {}
-    )
-
-    if (releaseNotesResponse === '') {
-      info('release notes: nothing obtained from openai')
-    } else {
-      const message = `${RELEASE_NOTES_TITLE}\n\n${releaseNotesResponse}`
-      try {
-        if (context.payload.pull_request != null) {
-          await commenter.updateDescription(
-            context.payload.pull_request.number,
-            message
-          )
-        }
-      } catch (error: any) {
-        warning(`release notes: error from github: ${error.message as string}`)
-      }
-    }
-  }
+  await maybeUpdateReleaseNotes(heavyBot, commenter, inputs, prompts, options)
 
   const [summarizeShortResponse] = await heavyBot.chat(
     prompts.renderSummarizeShort(inputs),
@@ -202,17 +235,5 @@ export async function generateFinalSummaries(
   )
   inputs.shortSummary = summarizeShortResponse
 
-  let finalComment = `${summarizeFinalResponse}`
-  if (inputs.analyzerResults) {
-    finalComment += inputs.analyzerResults
-  }
-
-  return `${finalComment}
-${RAW_SUMMARY_START_TAG}
-${inputs.rawSummary}
-${RAW_SUMMARY_END_TAG}
-${SHORT_SUMMARY_START_TAG}
-${inputs.shortSummary}
-${SHORT_SUMMARY_END_TAG}
-`
+  return buildFinalSummaryComment(summarizeFinalResponse, inputs)
 }

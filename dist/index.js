@@ -4161,7 +4161,7 @@ function bodyIncludesIgnoreKeyword(body) {
 
 /***/ }),
 
-/***/ 5453:
+/***/ 5938:
 /***/ ((__unused_webpack_module, __webpack_exports__, __nccwpck_require__) => {
 
 "use strict";
@@ -4190,15 +4190,15 @@ var brand = __nccwpck_require__(8917);
 ;// CONCATENATED MODULE: ./lib/commenter-chains.js
 function composeCommentChain(reviewComments, topLevelComment) {
     const conversationChain = reviewComments
-        .filter((comment) => comment.in_reply_to_id === topLevelComment.id)
-        .map((comment) => `${comment.user.login}: ${comment.body}`);
+        .filter(comment => comment.in_reply_to_id === topLevelComment.id)
+        .map(comment => `${comment.user.login}: ${comment.body}`);
     conversationChain.unshift(`${topLevelComment.user.login}: ${topLevelComment.body}`);
     return conversationChain.join('\n---\n');
 }
 function getTopLevelComment(reviewComments, comment) {
     let topLevelComment = comment;
     while (topLevelComment.in_reply_to_id) {
-        const parentComment = reviewComments.find((currentComment) => currentComment.id === topLevelComment.in_reply_to_id);
+        const parentComment = reviewComments.find(currentComment => currentComment.id === topLevelComment.in_reply_to_id);
         if (parentComment == null) {
             break;
         }
@@ -4213,13 +4213,13 @@ function commentHasContent(comment, path) {
     return comment.path === path && comment.body !== '';
 }
 function commentSpansRange(comment, startLine, endLine) {
-    if (comment.start_line === undefined) {
+    if (comment.start_line == null) {
         return startLine === endLine && comment.line === endLine;
     }
     return comment.start_line >= startLine && comment.line <= endLine;
 }
 function commentMatchesExactRange(comment, startLine, endLine) {
-    if (comment.start_line === undefined) {
+    if (comment.start_line == null) {
         return startLine === endLine && comment.line === endLine;
     }
     return comment.start_line === startLine && comment.line === endLine;
@@ -4356,6 +4356,28 @@ function removeContentWithinTagAliases(content, startTag, endTag) {
     return content;
 }
 
+;// CONCATENATED MODULE: ./lib/github-types.js
+function normalizeReviewComment(comment) {
+    return {
+        id: comment.id,
+        body: comment.body ?? '',
+        path: comment.path ?? '',
+        line: comment.line ?? 0,
+        start_line: comment.start_line ?? undefined,
+        in_reply_to_id: comment.in_reply_to_id ?? undefined,
+        user: {
+            login: comment.user?.login ?? 'unknown'
+        },
+        diff_hunk: comment.diff_hunk ?? undefined
+    };
+}
+function normalizeIssueComment(comment) {
+    return {
+        id: comment.id,
+        body: comment.body ?? ''
+    };
+}
+
 ;// CONCATENATED MODULE: ./lib/commenter-state.js
 
 const COMMIT_ID_START_TAG = '<!-- commit_ids_reviewed_start -->';
@@ -4465,7 +4487,6 @@ async function deletePendingReview(repo, pullNumber) {
         const reviews = await octokit/* octokit */.A.pulls.listReviews({
             owner: repo.owner,
             repo: repo.repo,
-            // eslint-disable-next-line camelcase
             pull_number: pullNumber
         });
         const pendingReview = reviews.data.find(review => review.state === 'PENDING');
@@ -4477,9 +4498,7 @@ async function deletePendingReview(repo, pullNumber) {
             await octokit/* octokit */.A.pulls.deletePendingReview({
                 owner: repo.owner,
                 repo: repo.repo,
-                // eslint-disable-next-line camelcase
                 pull_number: pullNumber,
-                // eslint-disable-next-line camelcase
                 review_id: pendingReview.id
             });
         }
@@ -4497,9 +4516,7 @@ async function submitEmptyReview(repo, pullNumber, commitId, body) {
         await octokit/* octokit */.A.pulls.createReview({
             owner: repo.owner,
             repo: repo.repo,
-            // eslint-disable-next-line camelcase
             pull_number: pullNumber,
-            // eslint-disable-next-line camelcase
             commit_id: commitId,
             event: 'COMMENT',
             body
@@ -4525,10 +4542,8 @@ ${COMMENT_REPLY_TAG}
         await octokit/* octokit */.A.pulls.createReplyForReviewComment({
             owner: repo.owner,
             repo: repo.repo,
-            // eslint-disable-next-line camelcase
             pull_number: pullNumber,
             body: reply,
-            // eslint-disable-next-line camelcase
             comment_id: topLevelComment.id
         });
     }
@@ -4538,10 +4553,8 @@ ${COMMENT_REPLY_TAG}
             await octokit/* octokit */.A.pulls.createReplyForReviewComment({
                 owner: repo.owner,
                 repo: repo.repo,
-                // eslint-disable-next-line camelcase
                 pull_number: pullNumber,
                 body: `Could not post the reply to the top-level comment due to the following error: ${String(error)}`,
-                // eslint-disable-next-line camelcase
                 comment_id: topLevelComment.id
             });
         }
@@ -4557,7 +4570,6 @@ ${COMMENT_REPLY_TAG}
         await octokit/* octokit */.A.pulls.updateReviewComment({
             owner: repo.owner,
             repo: repo.repo,
-            // eslint-disable-next-line camelcase
             comment_id: topLevelComment.id,
             body: newBody
         });
@@ -4569,7 +4581,6 @@ ${COMMENT_REPLY_TAG}
 
 ;// CONCATENATED MODULE: ./lib/commenter.js
 
-// eslint-disable-next-line camelcase
 
 
 
@@ -4579,7 +4590,7 @@ ${COMMENT_REPLY_TAG}
 
 
 
-// eslint-disable-next-line camelcase
+
 const context = github.context;
 const repo = context.repo;
 const COMMENT_GREETING = `${(0,core.getInput)('bot_icon')} ${brand/* BOT_NAME */.Wm}`;
@@ -4647,7 +4658,6 @@ ${tag}`;
             const pr = await octokit/* octokit */.A.pulls.get({
                 owner: repo.owner,
                 repo: repo.repo,
-                // eslint-disable-next-line camelcase
                 pull_number: pullNumber
             });
             let body = '';
@@ -4660,7 +4670,6 @@ ${tag}`;
             await octokit/* octokit */.A.pulls.update({
                 owner: repo.owner,
                 repo: repo.repo,
-                // eslint-disable-next-line camelcase
                 pull_number: pullNumber,
                 body: newDescription
             });
@@ -4699,7 +4708,6 @@ ${COMMENT_TAG}`;
                         await octokit/* octokit */.A.pulls.deleteReviewComment({
                             owner: repo.owner,
                             repo: repo.repo,
-                            // eslint-disable-next-line camelcase
                             comment_id: c.id
                         });
                     }
@@ -4714,12 +4722,11 @@ ${COMMENT_TAG}`;
         const commentData = {
             path: comment.path,
             body: comment.message,
-            line: comment.endLine
+            line: comment.endLine,
+            side: 'RIGHT'
         };
         if (comment.startLine !== comment.endLine) {
-            // eslint-disable-next-line camelcase
             commentData.start_line = comment.startLine;
-            // eslint-disable-next-line camelcase
             commentData.start_side = 'RIGHT';
         }
         return commentData;
@@ -4731,9 +4738,7 @@ ${COMMENT_TAG}`;
             const commentData = {
                 owner: repo.owner,
                 repo: repo.repo,
-                // eslint-disable-next-line camelcase
                 pull_number: pullNumber,
-                // eslint-disable-next-line camelcase
                 commit_id: commitId,
                 ...this.generateCommentData(comment)
             };
@@ -4762,9 +4767,7 @@ ${statusMsg}
             const review = await octokit/* octokit */.A.pulls.createReview({
                 owner: repo.owner,
                 repo: repo.repo,
-                // eslint-disable-next-line camelcase
                 pull_number: pullNumber,
-                // eslint-disable-next-line camelcase
                 commit_id: commitId,
                 comments: this.reviewCommentsBuffer.map(comment => this.generateCommentData(comment))
             });
@@ -4772,9 +4775,7 @@ ${statusMsg}
             await octokit/* octokit */.A.pulls.submitReview({
                 owner: repo.owner,
                 repo: repo.repo,
-                // eslint-disable-next-line camelcase
                 pull_number: pullNumber,
-                // eslint-disable-next-line camelcase
                 review_id: review.data.id,
                 event: 'COMMENT',
                 body
@@ -4791,12 +4792,12 @@ ${statusMsg}
     }
     async getCommentsWithinRange(pullNumber, path, startLine, endLine) {
         const comments = await this.listReviewComments(pullNumber);
-        return comments.filter((comment) => commentHasContent(comment, path) &&
+        return comments.filter(comment => commentHasContent(comment, path) &&
             commentSpansRange(comment, startLine, endLine));
     }
     async getCommentsAtRange(pullNumber, path, startLine, endLine) {
         const comments = await this.listReviewComments(pullNumber);
-        return comments.filter((comment) => commentHasContent(comment, path) &&
+        return comments.filter(comment => commentHasContent(comment, path) &&
             commentMatchesExactRange(comment, startLine, endLine));
     }
     async getCommentChainsWithinRange(pullNumber, path, startLine, endLine, tag = '') {
@@ -4829,7 +4830,8 @@ ${chain}
     async getCommentChain(pullNumber, comment) {
         try {
             const reviewComments = await this.listReviewComments(pullNumber);
-            const topLevelComment = await this.getTopLevelComment(reviewComments, comment);
+            const normalizedComment = normalizeReviewComment(comment);
+            const topLevelComment = await this.getTopLevelComment(reviewComments, normalizedComment);
             const chain = await this.composeCommentChain(reviewComments, topLevelComment);
             return { chain, topLevelComment };
         }
@@ -4850,13 +4852,11 @@ ${chain}
             const { data: comments } = await octokit/* octokit */.A.pulls.listReviewComments({
                 owner: repo.owner,
                 repo: repo.repo,
-                // eslint-disable-next-line camelcase
                 pull_number: target,
                 page,
-                // eslint-disable-next-line camelcase
                 per_page: 100
             });
-            return comments;
+            return comments.map(normalizeReviewComment);
         }, 'review comments');
     }
     async create(body, target) {
@@ -4865,16 +4865,16 @@ ${chain}
             const response = await octokit/* octokit */.A.issues.createComment({
                 owner: repo.owner,
                 repo: repo.repo,
-                // eslint-disable-next-line camelcase
                 issue_number: target,
                 body
             });
             // add comment to issueCommentsCache
+            const normalizedComment = normalizeIssueComment(response.data);
             if (this.issueCommentsCache[target]) {
-                this.issueCommentsCache[target].push(response.data);
+                this.issueCommentsCache[target].push(normalizedComment);
             }
             else {
-                this.issueCommentsCache[target] = [response.data];
+                this.issueCommentsCache[target] = [normalizedComment];
             }
         }
         catch (e) {
@@ -4888,7 +4888,6 @@ ${chain}
                 await octokit/* octokit */.A.issues.updateComment({
                     owner: repo.owner,
                     repo: repo.repo,
-                    // eslint-disable-next-line camelcase
                     comment_id: cmt.id,
                     body
                 });
@@ -4922,13 +4921,11 @@ ${chain}
             const { data: comments } = await octokit/* octokit */.A.issues.listComments({
                 owner: repo.owner,
                 repo: repo.repo,
-                // eslint-disable-next-line camelcase
                 issue_number: target,
                 page,
-                // eslint-disable-next-line camelcase
                 per_page: 100
             });
-            return comments;
+            return comments.map(normalizeIssueComment);
         }, 'comments');
     }
     // function that takes a comment body and returns the list of commit ids that have been reviewed
@@ -4960,7 +4957,6 @@ ${chain}
             const commits = await octokit/* octokit */.A.pulls.listCommits({
                 owner: repo.owner,
                 repo: repo.repo,
-                // eslint-disable-next-line camelcase
                 pull_number: pullNumber,
                 per_page: 100,
                 page
@@ -10164,8 +10160,9 @@ Retry count: ${retryCount}
             const request = options;
             (0,core.warning)(`SecondaryRateLimit detected for request ${request.method} ${request.url} ; retry after ${retryAfter} seconds`);
             // if we are doing a POST method on /repos/{owner}/{repo}/pulls/{pull_number}/reviews then we shouldn't retry
+            const reviewUrlPattern = /\/repos\/.*\/.*\/pulls\/.*\/reviews/;
             if (request.method === 'POST' &&
-                request.url.match(/\/repos\/.*\/.*\/pulls\/.*\/reviews/)) {
+                reviewUrlPattern.exec(request.url) != null) {
                 return false;
             }
             return true;
@@ -13528,20 +13525,18 @@ $comment
 /* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__nccwpck_require__.n(_actions_core__WEBPACK_IMPORTED_MODULE_0__);
 /* harmony import */ var _actions_github__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(3228);
 /* harmony import */ var _actions_github__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__nccwpck_require__.n(_actions_github__WEBPACK_IMPORTED_MODULE_1__);
-/* harmony import */ var _commenter__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(5453);
+/* harmony import */ var _commenter__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(5938);
 /* harmony import */ var _brand__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(8917);
 /* harmony import */ var _inputs__WEBPACK_IMPORTED_MODULE_6__ = __nccwpck_require__(6107);
 /* harmony import */ var _octokit__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(419);
 /* harmony import */ var _tokenizer__WEBPACK_IMPORTED_MODULE_5__ = __nccwpck_require__(7134);
 
-// eslint-disable-next-line camelcase
 
 
 
 
 
 
-// eslint-disable-next-line camelcase
 const context = _actions_github__WEBPACK_IMPORTED_MODULE_1__.context;
 const repo = context.repo;
 function getValidationError() {
@@ -13931,8 +13926,8 @@ function validateConcurrency(concurrency) {
 	}
 }
 
-// EXTERNAL MODULE: ./lib/commenter.js + 6 modules
-var lib_commenter = __nccwpck_require__(5453);
+// EXTERNAL MODULE: ./lib/commenter.js + 7 modules
+var lib_commenter = __nccwpck_require__(5938);
 ;// CONCATENATED MODULE: ./lib/complexity-report.js
 function getComplexityRecommendation(type, score) {
     if (type === 'cyclomatic') {
@@ -13996,19 +13991,7 @@ function formatComplexityReportAsMarkdown(report, filename) {
 }
 
 ;// CONCATENATED MODULE: ./lib/complexity-analyzer.js
-/**
- * Complexity Analyzer
- *
- * Analyzes code complexity using multiple metrics:
- * - Cyclomatic Complexity: Measures the number of independent paths through code
- * - Cognitive Complexity: Measures how difficult code is to understand
- * - Maintainability Index: Holistic measure of code maintainability
- *
- * Thresholds:
- * - Cyclomatic Complexity: <= 10 (good), 11-20 (moderate), > 20 (high)
- * - Cognitive Complexity: <= 15 (good), 16-30 (moderate), > 30 (high)
- * - Function Length: <= 50 lines (good), 51-100 (moderate), > 100 (high)
- */
+
 /**
  * Analyzes code complexity across multiple dimensions
  */
@@ -14334,7 +14317,6 @@ class ComplexityAnalyzer {
         return formatComplexityReportAsMarkdown(report, filename);
     }
 }
-
 
 ;// CONCATENATED MODULE: ./lib/performance-analyzer.js
 /**
@@ -15235,7 +15217,6 @@ function createSkipAnalyzer(config) {
 
 ;// CONCATENATED MODULE: ./lib/review-analysis.js
 
-// eslint-disable-next-line camelcase
 
 
 
@@ -15243,7 +15224,6 @@ function createSkipAnalyzer(config) {
 
 
 
-// eslint-disable-next-line camelcase
 const context = github.context;
 function bodyShouldBeIgnored(description) {
     return (0,brand/* bodyIncludesIgnoreKeyword */.RI)(description);
@@ -15264,7 +15244,7 @@ function applySmartSkipping(files, options) {
     const skipped = [];
     const skipReasons = new Map();
     for (const file of files) {
-        const evaluation = skipAnalyzer.evaluateFile(file.filename, file.patch ?? '', undefined);
+        const evaluation = skipAnalyzer.evaluateFile(file.filename, file.patch ?? '');
         if (!evaluation.shouldSkip) {
             selected.push(file);
             continue;
@@ -15327,35 +15307,30 @@ async function runAnalyzers(options, filesAndChanges) {
     }
     return analyzerReport;
 }
-async function generateFinalSummaries(heavyBot, commenter, inputs, prompts, options) {
-    const [summarizeFinalResponse] = await heavyBot.chat(prompts.renderSummarize(inputs), {});
-    if (summarizeFinalResponse === '') {
-        (0,core.info)('summarize: nothing obtained from openai');
+async function maybeUpdateReleaseNotes(heavyBot, commenter, inputs, prompts, options) {
+    if (options.disableReleaseNotes) {
+        return;
     }
-    if (!options.disableReleaseNotes) {
-        const [releaseNotesResponse] = await heavyBot.chat(prompts.renderSummarizeReleaseNotes(inputs), {});
-        if (releaseNotesResponse === '') {
-            (0,core.info)('release notes: nothing obtained from openai');
-        }
-        else {
-            const message = `${brand/* RELEASE_NOTES_TITLE */.rl}\n\n${releaseNotesResponse}`;
-            try {
-                if (context.payload.pull_request != null) {
-                    await commenter.updateDescription(context.payload.pull_request.number, message);
-                }
-            }
-            catch (error) {
-                (0,core.warning)(`release notes: error from github: ${error.message}`);
-            }
-        }
+    const [releaseNotesResponse] = await heavyBot.chat(prompts.renderSummarizeReleaseNotes(inputs), {});
+    if (releaseNotesResponse === '') {
+        (0,core.info)('release notes: nothing obtained from openai');
+        return;
     }
-    const [summarizeShortResponse] = await heavyBot.chat(prompts.renderSummarizeShort(inputs), {});
-    inputs.shortSummary = summarizeShortResponse;
-    let finalComment = `${summarizeFinalResponse}`;
-    if (inputs.analyzerResults) {
-        finalComment += inputs.analyzerResults;
+    const pullRequest = context.payload.pull_request;
+    if (pullRequest == null) {
+        return;
     }
-    return `${finalComment}
+    const message = `${brand/* RELEASE_NOTES_TITLE */.rl}\n\n${releaseNotesResponse}`;
+    try {
+        await commenter.updateDescription(pullRequest.number, message);
+    }
+    catch (error) {
+        (0,core.warning)(`release notes: error from github: ${error instanceof Error ? error.message : String(error)}`);
+    }
+}
+function buildFinalSummaryComment(summarizeFinalResponse, inputs) {
+    const analyzerResults = inputs.analyzerResults ?? '';
+    return `${summarizeFinalResponse}${analyzerResults}
 ${lib_commenter/* RAW_SUMMARY_START_TAG */.S7}
 ${inputs.rawSummary}
 ${lib_commenter/* RAW_SUMMARY_END_TAG */.tj}
@@ -15363,6 +15338,16 @@ ${lib_commenter/* SHORT_SUMMARY_START_TAG */.Es}
 ${inputs.shortSummary}
 ${lib_commenter/* SHORT_SUMMARY_END_TAG */.Nz}
 `;
+}
+async function generateFinalSummaries(heavyBot, commenter, inputs, prompts, options) {
+    const [summarizeFinalResponse] = await heavyBot.chat(prompts.renderSummarize(inputs), {});
+    if (summarizeFinalResponse === '') {
+        (0,core.info)('summarize: nothing obtained from openai');
+    }
+    await maybeUpdateReleaseNotes(heavyBot, commenter, inputs, prompts, options);
+    const [summarizeShortResponse] = await heavyBot.chat(prompts.renderSummarizeShort(inputs), {});
+    inputs.shortSummary = summarizeShortResponse;
+    return buildFinalSummaryComment(summarizeFinalResponse, inputs);
 }
 
 // EXTERNAL MODULE: ./lib/octokit.js + 25 modules
@@ -15460,11 +15445,9 @@ const parsePatch = (patch) => {
 
 ;// CONCATENATED MODULE: ./lib/review-files.js
 
-// eslint-disable-next-line camelcase
 
 
 
-// eslint-disable-next-line camelcase
 const review_files_context = github.context;
 const repo = review_files_context.repo;
 function filterFilesByPath(files, options) {
@@ -15569,11 +15552,13 @@ async function fetchDiffsAndFilterFiles(highestReviewedCommitId, options) {
     if (files.length === 0 ||
         filterSelectedFiles.length === 0 ||
         commits.length === 0) {
-        const emptyResultLabel = files.length === 0
-            ? 'files'
-            : filterSelectedFiles.length === 0
-                ? 'filterSelectedFiles'
-                : 'commits';
+        let emptyResultLabel = 'commits';
+        if (files.length === 0) {
+            emptyResultLabel = 'files';
+        }
+        else if (filterSelectedFiles.length === 0) {
+            emptyResultLabel = 'filterSelectedFiles';
+        }
         (0,core.warning)(`Skipped: ${emptyResultLabel} is null`);
         return null;
     }
@@ -15593,6 +15578,13 @@ async function processFilesForReview(filterSelectedFiles, githubConcurrencyLimit
 
 const COMMENT_SEPARATOR = '---';
 const LINE_NUMBER_RANGE_REGEX = /(?:^|\s)(\d+)-(\d+):\s*$/;
+function createEmptyPendingReview() {
+    return {
+        startLine: null,
+        endLine: null,
+        comment: ''
+    };
+}
 function sanitizeCodeBlock(comment, codeBlockLabel) {
     const codeBlockStart = `\`\`\`${codeBlockLabel}`;
     const codeBlockEnd = '```';
@@ -15658,7 +15650,8 @@ function mapReviewToPatch(review, patches) {
     review.comment = `${note}
 
 ${review.comment}`;
-    review.startLine = bestPatchStartLine !== -1 ? bestPatchStartLine : patches[0][0];
+    review.startLine =
+        bestPatchStartLine !== -1 ? bestPatchStartLine : patches[0][0];
     review.endLine = bestPatchEndLine !== -1 ? bestPatchEndLine : patches[0][1];
 }
 function flushPendingReview(pendingReview, patches, reviews, debug) {
@@ -15676,11 +15669,7 @@ function flushPendingReview(pendingReview, patches, reviews, debug) {
     if (debug) {
         (0,core.info)('Flushed parsed review block');
     }
-    return {
-        startLine: null,
-        endLine: null,
-        comment: ''
-    };
+    return createEmptyPendingReview();
 }
 function startPendingReview(line, debug) {
     const lineNumberRangeMatch = LINE_NUMBER_RANGE_REGEX.exec(line);
@@ -15710,20 +15699,17 @@ function appendReviewLine(pendingReview, line) {
 function parseReview(response, patches, debug = false) {
     const reviews = [];
     const sanitizedLines = sanitizeResponse(response.trim()).split('\n');
-    let pendingReview = {
-        startLine: null,
-        endLine: null,
-        comment: ''
-    };
+    let pendingReview = createEmptyPendingReview();
     for (const line of sanitizedLines) {
         const nextReview = startPendingReview(line, debug);
         if (nextReview != null) {
-            pendingReview = flushPendingReview(pendingReview, patches, reviews, debug);
+            flushPendingReview(pendingReview, patches, reviews, debug);
             pendingReview = nextReview;
             continue;
         }
         if (line.trim() === COMMENT_SEPARATOR) {
-            pendingReview = flushPendingReview(pendingReview, patches, reviews, debug);
+            flushPendingReview(pendingReview, patches, reviews, debug);
+            pendingReview = createEmptyPendingReview();
             continue;
         }
         pendingReview = appendReviewLine(pendingReview, line);
@@ -15736,12 +15722,10 @@ function parseReview(response, patches, debug = false) {
 var tokenizer = __nccwpck_require__(7134);
 ;// CONCATENATED MODULE: ./lib/review-reviews.js
 
-// eslint-disable-next-line camelcase
 
 
 
 
-// eslint-disable-next-line camelcase
 const review_reviews_context = github.context;
 function createReviewCounter() {
     return {
@@ -15754,8 +15738,7 @@ function getPullNumber() {
 }
 function selectFilesForReview(filesAndChanges, summaries) {
     const filesAndChangesReview = filesAndChanges.filter(([filename]) => {
-        const needsReview = summaries.find(([summaryFilename]) => summaryFilename === filename)?.[2] ??
-            true;
+        const needsReview = summaries.find(([summaryFilename]) => summaryFilename === filename)?.[2] ?? true;
         return needsReview;
     });
     const reviewsSkipped = filesAndChanges
@@ -15824,7 +15807,8 @@ async function packPatchesIntoInputs(args, ins, patches, patchesToPack, baseToke
         patchesPacked += 1;
         const commentChain = await getCommentChainForPatch(args.commenter, pullNumber, ins.filename, startLine, endLine);
         const commentChainTokens = (0,tokenizer/* getTokenCount */.N)(commentChain);
-        if (tokens + commentChainTokens <= args.options.heavyTokenLimits.requestTokens) {
+        if (tokens + commentChainTokens <=
+            args.options.heavyTokenLimits.requestTokens) {
             tokens += commentChainTokens;
         }
         appendPatchBlock(ins, patch, commentChain);
@@ -16242,7 +16226,6 @@ function classifyError(error) {
 
 ;// CONCATENATED MODULE: ./lib/review.js
 
-// eslint-disable-next-line camelcase
 
 
 
@@ -16252,7 +16235,6 @@ function classifyError(error) {
 
 
 
-// eslint-disable-next-line camelcase
 const review_context = github.context;
 async function getHighestReviewedCommitId(commenter) {
     if (review_context.payload.pull_request == null) {
@@ -16389,7 +16371,7 @@ function logSmartSkipping(smartSkippedFiles, skipReasons) {
     }
     (0,core.info)('Skipped files:');
     for (const file of smartSkippedFiles) {
-        const reason = skipReasons.get(file.filename) || 'unknown reason';
+        const reason = skipReasons.get(file.filename) ?? 'unknown reason';
         (0,core.info)(`  - ${file.filename}: ${reason}`);
     }
 }

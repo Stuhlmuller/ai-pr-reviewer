@@ -10,6 +10,14 @@ interface PendingReview {
   comment: string
 }
 
+function createEmptyPendingReview(): PendingReview {
+  return {
+    startLine: null,
+    endLine: null,
+    comment: ''
+  }
+}
+
 function sanitizeCodeBlock(comment: string, codeBlockLabel: string): string {
   const codeBlockStart = `\`\`\`${codeBlockLabel}`
   const codeBlockEnd = '```'
@@ -150,11 +158,7 @@ function flushPendingReview(
     info('Flushed parsed review block')
   }
 
-  return {
-    startLine: null,
-    endLine: null,
-    comment: ''
-  }
+  return createEmptyPendingReview()
 }
 
 function startPendingReview(
@@ -201,22 +205,19 @@ export function parseReview(
 ): ReviewComment[] {
   const reviews: ReviewComment[] = []
   const sanitizedLines = sanitizeResponse(response.trim()).split('\n')
-  let pendingReview: PendingReview = {
-    startLine: null,
-    endLine: null,
-    comment: ''
-  }
+  let pendingReview = createEmptyPendingReview()
 
   for (const line of sanitizedLines) {
     const nextReview = startPendingReview(line, debug)
     if (nextReview != null) {
-      pendingReview = flushPendingReview(pendingReview, patches, reviews, debug)
+      flushPendingReview(pendingReview, patches, reviews, debug)
       pendingReview = nextReview
       continue
     }
 
     if (line.trim() === COMMENT_SEPARATOR) {
-      pendingReview = flushPendingReview(pendingReview, patches, reviews, debug)
+      flushPendingReview(pendingReview, patches, reviews, debug)
+      pendingReview = createEmptyPendingReview()
       continue
     }
 

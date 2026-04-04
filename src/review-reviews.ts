@@ -1,5 +1,4 @@
 import {info, warning} from '@actions/core'
-// eslint-disable-next-line camelcase
 import {context as github_context} from '@actions/github'
 import {COMMENT_REPLY_TAG} from './commenter'
 import {type Inputs} from './inputs'
@@ -13,7 +12,6 @@ import {
 } from './review-types'
 import {getTokenCount} from './tokenizer'
 
-// eslint-disable-next-line camelcase
 const context = github_context
 
 interface ReviewSelection {

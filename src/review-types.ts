@@ -1,5 +1,10 @@
 import {type Bot} from './bot'
 import {type Commenter} from './commenter'
+import {
+  type GithubCommitRef,
+  type GithubPullRequestFile,
+  type GithubReviewComment
+} from './github-types'
 import {type Inputs} from './inputs'
 import {type Options} from './options'
 import {type Prompts} from './prompts'
@@ -47,12 +52,14 @@ export interface ReviewProcessResult {
 
 export interface ReviewFileRecord {
   filename: string
-  patch: string | null | undefined
+  patch?: string | null
 }
 
 export interface DiffFilterResult {
-  files: any[]
-  commits: any[]
-  filterSelectedFiles: any[]
-  filterIgnoredFiles: any[]
+  files: GithubPullRequestFile[]
+  commits: GithubCommitRef[]
+  filterSelectedFiles: GithubPullRequestFile[]
+  filterIgnoredFiles: GithubPullRequestFile[]
 }
+
+export type ReviewCommentsByPullRequest = Record<number, GithubReviewComment[]>

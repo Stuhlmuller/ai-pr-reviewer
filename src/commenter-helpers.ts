@@ -1,15 +1,19 @@
 import {warning} from '@actions/core'
+import {type GithubReviewComment} from './github-types'
 
-export function commentHasContent(comment: any, path: string): boolean {
+export function commentHasContent(
+  comment: GithubReviewComment,
+  path: string
+): boolean {
   return comment.path === path && comment.body !== ''
 }
 
 export function commentSpansRange(
-  comment: any,
+  comment: GithubReviewComment,
   startLine: number,
   endLine: number
-) {
-  if (comment.start_line === undefined) {
+): boolean {
+  if (comment.start_line == null) {
     return startLine === endLine && comment.line === endLine
   }
 
@@ -17,28 +21,28 @@ export function commentSpansRange(
 }
 
 export function commentMatchesExactRange(
-  comment: any,
+  comment: GithubReviewComment,
   startLine: number,
   endLine: number
-) {
-  if (comment.start_line === undefined) {
+): boolean {
+  if (comment.start_line == null) {
     return startLine === endLine && comment.line === endLine
   }
 
   return comment.start_line === startLine && comment.line === endLine
 }
 
-export async function listPaginatedCached(
+export async function listPaginatedCached<T>(
   target: number,
-  cache: Record<number, any[]>,
-  fetchPage: (page: number) => Promise<any[]>,
+  cache: Record<number, T[]>,
+  fetchPage: (page: number) => Promise<T[]>,
   entityName: string
-) {
+): Promise<T[]> {
   if (cache[target]) {
     return cache[target]
   }
 
-  const allItems: any[] = []
+  const allItems: T[] = []
   let page = 1
 
   try {

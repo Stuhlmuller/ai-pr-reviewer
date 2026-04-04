@@ -1,10 +1,12 @@
+import {type GithubReviewComment} from './github-types'
+
 export function composeCommentChain(
-  reviewComments: any[],
-  topLevelComment: any
+  reviewComments: GithubReviewComment[],
+  topLevelComment: GithubReviewComment
 ): string {
   const conversationChain = reviewComments
-    .filter((comment: any) => comment.in_reply_to_id === topLevelComment.id)
-    .map((comment: any) => `${comment.user.login}: ${comment.body}`)
+    .filter(comment => comment.in_reply_to_id === topLevelComment.id)
+    .map(comment => `${comment.user.login}: ${comment.body}`)
 
   conversationChain.unshift(
     `${topLevelComment.user.login}: ${topLevelComment.body}`
@@ -12,13 +14,15 @@ export function composeCommentChain(
   return conversationChain.join('\n---\n')
 }
 
-export function getTopLevelComment(reviewComments: any[], comment: any): any {
+export function getTopLevelComment(
+  reviewComments: GithubReviewComment[],
+  comment: GithubReviewComment
+): GithubReviewComment {
   let topLevelComment = comment
 
   while (topLevelComment.in_reply_to_id) {
     const parentComment = reviewComments.find(
-      (currentComment: any) =>
-        currentComment.id === topLevelComment.in_reply_to_id
+      currentComment => currentComment.id === topLevelComment.in_reply_to_id
     )
 
     if (parentComment == null) {

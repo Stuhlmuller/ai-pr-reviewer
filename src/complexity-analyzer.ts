@@ -1,3 +1,9 @@
+import {
+  formatComplexityReportAsMarkdown,
+  generateComplexitySummary,
+  getComplexityRecommendation
+} from './complexity-report'
+
 /**
  * Complexity Analyzer
  *
@@ -500,8 +506,3 @@ export class ComplexityAnalyzer {
     return formatComplexityReportAsMarkdown(report, filename)
   }
 }
-import {
-  formatComplexityReportAsMarkdown,
-  generateComplexitySummary,
-  getComplexityRecommendation
-} from './complexity-report'

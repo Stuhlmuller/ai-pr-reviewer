@@ -1,6 +1,6 @@
 import {info, warning} from '@actions/core'
-// eslint-disable-next-line camelcase
 import {context as github_context} from '@actions/github'
+import {type GithubCommitRef, type GithubPullRequestFile} from './github-types'
 import {octokit} from './octokit'
 import {type Options} from './options'
 import {parsePatch, patchStartEndLine, splitPatch} from './review-patch-parser'
@@ -12,16 +12,15 @@ import {
   type ReviewPatch
 } from './review-types'
 
-// eslint-disable-next-line camelcase
 const context = github_context
 const repo = context.repo
 
 export function filterFilesByPath(
-  files: any[],
+  files: GithubPullRequestFile[],
   options: Options
-): {selected: any[]; ignored: any[]} {
-  const selected: any[] = []
-  const ignored: any[] = []
+): {selected: GithubPullRequestFile[]; ignored: GithubPullRequestFile[]} {
+  const selected: GithubPullRequestFile[] = []
+  const ignored: GithubPullRequestFile[] = []
 
   for (const file of files) {
     if (!options.checkPath(file.filename)) {
@@ -37,9 +36,9 @@ export function filterFilesByPath(
 }
 
 function filterIncrementalFiles(
-  incrementalFiles: any[],
-  targetBranchFiles: any[]
-): any[] {
+  incrementalFiles: GithubPullRequestFile[],
+  targetBranchFiles: GithubPullRequestFile[]
+): GithubPullRequestFile[] {
   return targetBranchFiles.filter(targetBranchFile =>
     incrementalFiles.some(
       incrementalFile => incrementalFile.filename === targetBranchFile.filename
@@ -156,19 +155,19 @@ export async function fetchDiffsAndFilterFiles(
   const files = filterIncrementalFiles(incrementalFiles, targetBranchFiles)
   const {selected: filterSelectedFiles, ignored: filterIgnoredFiles} =
     filterFilesByPath(files, options)
-  const commits = incrementalDiff.data.commits
+  const commits = incrementalDiff.data.commits as GithubCommitRef[]
 
   if (
     files.length === 0 ||
     filterSelectedFiles.length === 0 ||
     commits.length === 0
   ) {
-    const emptyResultLabel =
-      files.length === 0
-        ? 'files'
-        : filterSelectedFiles.length === 0
-          ? 'filterSelectedFiles'
-          : 'commits'
+    let emptyResultLabel = 'commits'
+    if (files.length === 0) {
+      emptyResultLabel = 'files'
+    } else if (filterSelectedFiles.length === 0) {
+      emptyResultLabel = 'filterSelectedFiles'
+    }
     warning(`Skipped: ${emptyResultLabel} is null`)
     return null
   }
