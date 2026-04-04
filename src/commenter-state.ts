@@ -2,7 +2,8 @@ import {
   getContentWithinTagAliases,
   getTagAliases,
   IN_PROGRESS_END_TAG,
-  IN_PROGRESS_START_TAG
+  IN_PROGRESS_START_TAG,
+  removeContentWithinTagAliases
 } from './comment-tags'
 
 export const COMMIT_ID_START_TAG = '<!-- commit_ids_reviewed_start -->'
@@ -114,19 +115,20 @@ ${commentBody}`
 }
 
 export function removeInProgressStatus(commentBody: string): string {
-  const inProgressStatus = getDelimitedContent(
-    commentBody,
-    IN_PROGRESS_START_TAG,
-    IN_PROGRESS_END_TAG
-  )
+  const hasInProgressBlock =
+    getTagAliases(IN_PROGRESS_START_TAG).some(tag =>
+      commentBody.includes(tag)
+    ) &&
+    getTagAliases(IN_PROGRESS_END_TAG).some(tag => commentBody.includes(tag))
 
-  if (inProgressStatus === '') {
+  if (!hasInProgressBlock) {
     return commentBody
   }
 
-  return commentBody.replace(
-    `${IN_PROGRESS_START_TAG}${inProgressStatus}${IN_PROGRESS_END_TAG}`,
-    ''
+  return removeContentWithinTagAliases(
+    commentBody,
+    IN_PROGRESS_START_TAG,
+    IN_PROGRESS_END_TAG
   )
 }
 

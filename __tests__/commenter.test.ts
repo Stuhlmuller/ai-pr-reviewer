@@ -21,6 +21,10 @@ const LEGACY_DESCRIPTION_START_TAG =
   '<!-- This is an auto-generated comment: release notes by OSS CodeReviewer -->'
 const LEGACY_DESCRIPTION_END_TAG =
   '<!-- end of auto-generated comment: release notes by OSS CodeReviewer -->'
+const LEGACY_IN_PROGRESS_START_TAG =
+  '<!-- This is an auto-generated comment: summarize review in progress by OSS CodeReviewer -->'
+const LEGACY_IN_PROGRESS_END_TAG =
+  '<!-- end of auto-generated comment: summarize review in progress by OSS CodeReviewer -->'
 const LEGACY_RAW_SUMMARY_START_TAG = `<!-- This is an auto-generated comment: raw summary by OSS CodeReviewer -->
 <!--
 `
@@ -113,6 +117,26 @@ describe('Commenter', () => {
       const result = await commenter.findCommentWithTag(SUMMARIZE_TAG, 42)
 
       expect(result?.id).toBe(2)
+    })
+
+    test('should remove legacy in-progress status from body', () => {
+      const legacyStatusBody = 'legacy_in_progress_status'
+      const content = `${LEGACY_IN_PROGRESS_START_TAG}
+
+${legacyStatusBody}
+
+${LEGACY_IN_PROGRESS_END_TAG}
+
+---
+
+summary`
+
+      const result = commenter.removeInProgressStatus(content)
+
+      expect(result).not.toContain(LEGACY_IN_PROGRESS_START_TAG)
+      expect(result).not.toContain(LEGACY_IN_PROGRESS_END_TAG)
+      expect(result).not.toContain(legacyStatusBody)
+      expect(result).toContain('summary')
     })
   })
 
