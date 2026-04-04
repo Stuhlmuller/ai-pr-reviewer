@@ -23,8 +23,8 @@ describe('Options', () => {
       expect(options.reviewSimpleChanges).toBe(false)
       expect(options.reviewCommentLGTM).toBe(false)
       expect(options.systemMessage).toBe('')
-      expect(options.openaiLightModel).toBe('gpt-3.5-turbo')
-      expect(options.openaiHeavyModel).toBe('gpt-3.5-turbo')
+      expect(options.openaiLightModel).toBe('gpt-4o-mini')
+      expect(options.openaiHeavyModel).toBe('gpt-4o-mini')
       expect(options.openaiModelTemperature).toBe(0.0)
       expect(options.openaiRetries).toBe(3)
       expect(options.openaiTimeoutMS).toBe(120000)
@@ -271,9 +271,9 @@ describe('OpenAIOptions', () => {
   describe('constructor', () => {
     test('should initialize with default model', () => {
       const options = new OpenAIOptions()
-      expect(options.model).toBe('gpt-3.5-turbo')
+      expect(options.model).toBe('gpt-4o-mini')
       expect(options.tokenLimits).toBeInstanceOf(TokenLimits)
-      expect(options.tokenLimits.maxTokens).toBe(16385)
+      expect(options.tokenLimits.maxTokens).toBe(128000)
     })
 
     test('should initialize with custom model', () => {
