@@ -375,7 +375,7 @@ export class ComplexityAnalyzer {
     functions.push({
       name: currentFunction.name,
       startLine: currentFunction.startLine,
-      endLine: endLine,
+      endLine,
       cyclomaticComplexity: this.calculateCyclomaticComplexity(functionBody),
       cognitiveComplexity: this.calculateCognitiveComplexity(functionBody),
       lines: functionLines.length,

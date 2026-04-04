@@ -27,14 +27,13 @@ import {
   type ReviewState
 } from './review-state'
 import {SecurityScanner} from './security-scanner'
+import {bodyIncludesIgnoreKeyword, RELEASE_NOTES_TITLE} from './brand'
 import {createSkipAnalyzer, type SkipConfig} from './skip-logic'
 import {getTokenCount} from './tokenizer'
 
 // eslint-disable-next-line camelcase
 const context = github_context
 const repo = context.repo
-
-const ignoreKeyword = '@codereviewer: ignore'
 
 async function getHighestReviewedCommitId(
   commenter: Commenter
@@ -378,7 +377,7 @@ async function generateFinalSummaries(
     if (releaseNotesResponse === '') {
       info('release notes: nothing obtained from openai')
     } else {
-      const message = `### Summary by CodeReviewer\n\n${releaseNotesResponse}`
+      const message = `${RELEASE_NOTES_TITLE}\n\n${releaseNotesResponse}`
       try {
         if (context.payload.pull_request != null) {
           await commenter.updateDescription(
@@ -712,7 +711,7 @@ function validateEventAndSetup(
     )
   }
 
-  if (inputs.description.includes(ignoreKeyword)) {
+  if (bodyIncludesIgnoreKeyword(inputs.description)) {
     info('Skipped: description contains ignore_keyword')
     return false
   }

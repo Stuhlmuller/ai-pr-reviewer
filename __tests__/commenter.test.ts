@@ -1,6 +1,9 @@
 import {expect, describe, test, beforeEach, jest} from '@jest/globals'
 import {
+  bodyHasTag,
   Commenter,
+  COMMENT_TAG,
+  SUMMARIZE_TAG,
   RAW_SUMMARY_START_TAG,
   RAW_SUMMARY_END_TAG,
   SHORT_SUMMARY_START_TAG,
@@ -8,6 +11,21 @@ import {
   DESCRIPTION_START_TAG,
   DESCRIPTION_END_TAG
 } from '../src/commenter'
+import {octokit} from '../src/octokit'
+
+const LEGACY_COMMENT_TAG =
+  '<!-- This is an auto-generated comment by OSS CodeReviewer -->'
+const LEGACY_SUMMARIZE_TAG =
+  '<!-- This is an auto-generated comment: summarize by OSS CodeReviewer -->'
+const LEGACY_DESCRIPTION_START_TAG =
+  '<!-- This is an auto-generated comment: release notes by OSS CodeReviewer -->'
+const LEGACY_DESCRIPTION_END_TAG =
+  '<!-- end of auto-generated comment: release notes by OSS CodeReviewer -->'
+const LEGACY_RAW_SUMMARY_START_TAG = `<!-- This is an auto-generated comment: raw summary by OSS CodeReviewer -->
+<!--
+`
+const LEGACY_RAW_SUMMARY_END_TAG = `-->
+<!-- end of auto-generated comment: raw summary by OSS CodeReviewer -->`
 
 // Mock @actions/core
 jest.mock('@actions/core', () => ({
@@ -27,16 +45,24 @@ jest.mock('@actions/github', () => ({
 // Mock octokit
 jest.mock('../src/octokit', () => ({
   octokit: {
-    rest: {
-      issues: {
-        createComment: jest.fn(),
-        listComments: jest.fn(),
-        updateComment: jest.fn()
-      },
-      pulls: {
-        listReviewComments: jest.fn(),
-        createReviewComment: jest.fn()
-      }
+    issues: {
+      createComment: jest.fn(),
+      listComments: jest.fn(),
+      updateComment: jest.fn()
+    },
+    pulls: {
+      listReviewComments: jest.fn(),
+      createReviewComment: jest.fn(),
+      createReplyForReviewComment: jest.fn(),
+      updateReviewComment: jest.fn(),
+      listReviews: jest.fn(),
+      deletePendingReview: jest.fn(),
+      createReview: jest.fn(),
+      submitReview: jest.fn(),
+      get: jest.fn(),
+      update: jest.fn(),
+      listCommits: jest.fn(),
+      deleteReviewComment: jest.fn()
     }
   }
 }))
@@ -47,6 +73,47 @@ describe('Commenter', () => {
   beforeEach(() => {
     commenter = new Commenter()
     jest.clearAllMocks()
+  })
+
+  describe('legacy tag compatibility', () => {
+    test('should recognize legacy comment tags', () => {
+      expect(bodyHasTag(LEGACY_COMMENT_TAG, COMMENT_TAG)).toBe(true)
+    })
+
+    test('should extract content between legacy raw summary tags', () => {
+      const content = `before${LEGACY_RAW_SUMMARY_START_TAG}legacy summary${LEGACY_RAW_SUMMARY_END_TAG}after`
+      const result = commenter.getContentWithinTags(
+        content,
+        RAW_SUMMARY_START_TAG,
+        RAW_SUMMARY_END_TAG
+      )
+
+      expect(result).toBe('legacy summary')
+    })
+
+    test('should remove content between legacy description tags', () => {
+      const content = `before${LEGACY_DESCRIPTION_START_TAG}remove this${LEGACY_DESCRIPTION_END_TAG}after`
+      const result = commenter.removeContentWithinTags(
+        content,
+        DESCRIPTION_START_TAG,
+        DESCRIPTION_END_TAG
+      )
+
+      expect(result).toBe('beforeafter')
+    })
+
+    test('should find comments tagged with the legacy summarize tag', async () => {
+      ;(octokit.issues.listComments as jest.Mock).mockResolvedValue({
+        data: [
+          {id: 1, body: 'plain comment'},
+          {id: 2, body: `${LEGACY_SUMMARIZE_TAG}\nlegacy summary`}
+        ]
+      })
+
+      const result = await commenter.findCommentWithTag(SUMMARIZE_TAG, 42)
+
+      expect(result?.id).toBe(2)
+    })
   })
 
   describe('getContentWithinTags', () => {
@@ -176,6 +243,12 @@ describe('Commenter', () => {
       const result = commenter.getRawSummary(content)
       expect(result).toBe('')
     })
+
+    test('should extract raw summary from legacy tags', () => {
+      const content = `before${LEGACY_RAW_SUMMARY_START_TAG}raw summary text${LEGACY_RAW_SUMMARY_END_TAG}after`
+      const result = commenter.getRawSummary(content)
+      expect(result).toBe('raw summary text')
+    })
   })
 
   describe('getShortSummary', () => {
@@ -203,6 +276,12 @@ describe('Commenter', () => {
       const content = 'no description tags'
       const result = commenter.getDescription(content)
       expect(result).toBe(content)
+    })
+
+    test('should remove legacy description tags and return clean content', () => {
+      const content = `before${LEGACY_DESCRIPTION_START_TAG}release notes${LEGACY_DESCRIPTION_END_TAG}after`
+      const result = commenter.getDescription(content)
+      expect(result).toBe('beforeafter')
     })
   })
 

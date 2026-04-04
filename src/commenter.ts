@@ -1,46 +1,136 @@
 import {getInput, info, warning} from '@actions/core'
 // eslint-disable-next-line camelcase
 import {context as github_context} from '@actions/github'
+import {BOT_NAME} from './brand'
 import {octokit} from './octokit'
 
 // eslint-disable-next-line camelcase
 const context = github_context
 const repo = context.repo
 
-export const COMMENT_GREETING = `${getInput('bot_icon')} CodeReviewer`
+export const COMMENT_GREETING = `${getInput('bot_icon')} ${BOT_NAME}`
 
-export const COMMENT_TAG =
+const LEGACY_COMMENT_TAG =
   '<!-- This is an auto-generated comment by OSS CodeReviewer -->'
+export const COMMENT_TAG =
+  '<!-- This is an auto-generated comment by OSS Linewright -->'
 
-export const COMMENT_REPLY_TAG =
+const LEGACY_COMMENT_REPLY_TAG =
   '<!-- This is an auto-generated reply by OSS CodeReviewer -->'
+export const COMMENT_REPLY_TAG =
+  '<!-- This is an auto-generated reply by OSS Linewright -->'
 
-export const SUMMARIZE_TAG =
+const LEGACY_SUMMARIZE_TAG =
   '<!-- This is an auto-generated comment: summarize by OSS CodeReviewer -->'
+export const SUMMARIZE_TAG =
+  '<!-- This is an auto-generated comment: summarize by OSS Linewright -->'
 
-export const IN_PROGRESS_START_TAG =
+const LEGACY_IN_PROGRESS_START_TAG =
   '<!-- This is an auto-generated comment: summarize review in progress by OSS CodeReviewer -->'
+export const IN_PROGRESS_START_TAG =
+  '<!-- This is an auto-generated comment: summarize review in progress by OSS Linewright -->'
 
-export const IN_PROGRESS_END_TAG =
+const LEGACY_IN_PROGRESS_END_TAG =
   '<!-- end of auto-generated comment: summarize review in progress by OSS CodeReviewer -->'
+export const IN_PROGRESS_END_TAG =
+  '<!-- end of auto-generated comment: summarize review in progress by OSS Linewright -->'
 
-export const DESCRIPTION_START_TAG =
+const LEGACY_DESCRIPTION_START_TAG =
   '<!-- This is an auto-generated comment: release notes by OSS CodeReviewer -->'
-export const DESCRIPTION_END_TAG =
+export const DESCRIPTION_START_TAG =
+  '<!-- This is an auto-generated comment: release notes by OSS Linewright -->'
+const LEGACY_DESCRIPTION_END_TAG =
   '<!-- end of auto-generated comment: release notes by OSS CodeReviewer -->'
+export const DESCRIPTION_END_TAG =
+  '<!-- end of auto-generated comment: release notes by OSS Linewright -->'
 
-export const RAW_SUMMARY_START_TAG = `<!-- This is an auto-generated comment: raw summary by OSS CodeReviewer -->
+const LEGACY_RAW_SUMMARY_START_TAG = `<!-- This is an auto-generated comment: raw summary by OSS CodeReviewer -->
 <!--
 `
-export const RAW_SUMMARY_END_TAG = `-->
+export const RAW_SUMMARY_START_TAG = `<!-- This is an auto-generated comment: raw summary by OSS Linewright -->
+<!--
+`
+const LEGACY_RAW_SUMMARY_END_TAG = `-->
 <!-- end of auto-generated comment: raw summary by OSS CodeReviewer -->`
+export const RAW_SUMMARY_END_TAG = `-->
+<!-- end of auto-generated comment: raw summary by OSS Linewright -->`
 
-export const SHORT_SUMMARY_START_TAG = `<!-- This is an auto-generated comment: short summary by OSS CodeReviewer -->
+const LEGACY_SHORT_SUMMARY_START_TAG = `<!-- This is an auto-generated comment: short summary by OSS CodeReviewer -->
+<!--
+`
+export const SHORT_SUMMARY_START_TAG = `<!-- This is an auto-generated comment: short summary by OSS Linewright -->
 <!--
 `
 
-export const SHORT_SUMMARY_END_TAG = `-->
+const LEGACY_SHORT_SUMMARY_END_TAG = `-->
 <!-- end of auto-generated comment: short summary by OSS CodeReviewer -->`
+export const SHORT_SUMMARY_END_TAG = `-->
+<!-- end of auto-generated comment: short summary by OSS Linewright -->`
+
+const TAG_ALIASES: Record<string, string[]> = {
+  [COMMENT_TAG]: [COMMENT_TAG, LEGACY_COMMENT_TAG],
+  [COMMENT_REPLY_TAG]: [COMMENT_REPLY_TAG, LEGACY_COMMENT_REPLY_TAG],
+  [SUMMARIZE_TAG]: [SUMMARIZE_TAG, LEGACY_SUMMARIZE_TAG],
+  [IN_PROGRESS_START_TAG]: [
+    IN_PROGRESS_START_TAG,
+    LEGACY_IN_PROGRESS_START_TAG
+  ],
+  [IN_PROGRESS_END_TAG]: [IN_PROGRESS_END_TAG, LEGACY_IN_PROGRESS_END_TAG],
+  [DESCRIPTION_START_TAG]: [
+    DESCRIPTION_START_TAG,
+    LEGACY_DESCRIPTION_START_TAG
+  ],
+  [DESCRIPTION_END_TAG]: [DESCRIPTION_END_TAG, LEGACY_DESCRIPTION_END_TAG],
+  [RAW_SUMMARY_START_TAG]: [
+    RAW_SUMMARY_START_TAG,
+    LEGACY_RAW_SUMMARY_START_TAG
+  ],
+  [RAW_SUMMARY_END_TAG]: [RAW_SUMMARY_END_TAG, LEGACY_RAW_SUMMARY_END_TAG],
+  [SHORT_SUMMARY_START_TAG]: [
+    SHORT_SUMMARY_START_TAG,
+    LEGACY_SHORT_SUMMARY_START_TAG
+  ],
+  [SHORT_SUMMARY_END_TAG]: [SHORT_SUMMARY_END_TAG, LEGACY_SHORT_SUMMARY_END_TAG]
+}
+
+function getTagAliases(tag: string): string[] {
+  return TAG_ALIASES[tag] ?? [tag]
+}
+
+function getTagAliasPairs(
+  startTag: string,
+  endTag: string
+): Array<[string, string]> {
+  const startTags = getTagAliases(startTag)
+  const endTags = getTagAliases(endTag)
+  const pairCount = Math.max(startTags.length, endTags.length)
+
+  return Array.from({length: pairCount}, (_, index) => [
+    startTags[index] ?? startTag,
+    endTags[index] ?? endTag
+  ])
+}
+
+export function bodyHasTag(
+  body: string | null | undefined,
+  tag: string
+): boolean {
+  if (body == null || body === '') {
+    return false
+  }
+
+  return getTagAliases(tag).some(alias => body.includes(alias))
+}
+
+function replaceTagAlias(body: string, fromTag: string, toTag: string): string {
+  for (const alias of getTagAliases(fromTag)) {
+    if (body.includes(alias)) {
+      return body.replace(alias, toTag)
+    }
+  }
+
+  return body
+}
 
 export const COMMIT_ID_START_TAG = '<!-- commit_ids_reviewed_start -->'
 export const COMMIT_ID_END_TAG = '<!-- commit_ids_reviewed_end -->'
@@ -86,20 +176,34 @@ ${tag}`
   }
 
   getContentWithinTags(content: string, startTag: string, endTag: string) {
-    const start = content.indexOf(startTag)
-    const end = content.indexOf(endTag)
-    if (start >= 0 && end >= 0) {
-      return content.slice(start + startTag.length, end)
+    for (const [candidateStartTag, candidateEndTag] of getTagAliasPairs(
+      startTag,
+      endTag
+    )) {
+      const start = content.indexOf(candidateStartTag)
+      const end = content.indexOf(candidateEndTag)
+      if (start >= 0 && end >= 0) {
+        return content.slice(start + candidateStartTag.length, end)
+      }
     }
+
     return ''
   }
 
   removeContentWithinTags(content: string, startTag: string, endTag: string) {
-    const start = content.indexOf(startTag)
-    const end = content.lastIndexOf(endTag)
-    if (start >= 0 && end >= 0) {
-      return content.slice(0, start) + content.slice(end + endTag.length)
+    for (const [candidateStartTag, candidateEndTag] of getTagAliasPairs(
+      startTag,
+      endTag
+    )) {
+      const start = content.indexOf(candidateStartTag)
+      const end = content.lastIndexOf(candidateEndTag)
+      if (start >= 0 && end >= 0) {
+        return (
+          content.slice(0, start) + content.slice(end + candidateEndTag.length)
+        )
+      }
     }
+
     return content
   }
 
@@ -265,7 +369,7 @@ ${COMMENT_TAG}`
         comment.endLine
       )
       for (const c of comments) {
-        if (c.body.includes(COMMENT_TAG)) {
+        if (bodyHasTag(c.body, COMMENT_TAG)) {
           info(
             `Deleting review comment for ${comment.path}:${comment.startLine}-${comment.endLine}: ${comment.message}`
           )
@@ -422,9 +526,9 @@ ${COMMENT_REPLY_TAG}
       }
     }
     try {
-      if (topLevelComment.body.includes(COMMENT_TAG)) {
-        // replace COMMENT_TAG with COMMENT_REPLY_TAG in topLevelComment
-        const newBody = topLevelComment.body.replace(
+      if (bodyHasTag(topLevelComment.body, COMMENT_TAG)) {
+        const newBody = replaceTagAlias(
+          topLevelComment.body,
           COMMENT_TAG,
           COMMENT_REPLY_TAG
         )
@@ -506,7 +610,7 @@ ${COMMENT_REPLY_TAG}
         existingComments,
         topLevelComment
       )
-      if (chain?.includes(tag)) {
+      if (tag === '' || bodyHasTag(chain, tag)) {
         chainNum += 1
         allChains += `Conversation Chain ${chainNum}:
 ${chain}
@@ -647,7 +751,7 @@ ${chain}
     try {
       const comments = await this.listComments(target)
       for (const cmt of comments) {
-        if (cmt.body?.includes(tag)) {
+        if (bodyHasTag(cmt.body, tag)) {
           return cmt
         }
       }
@@ -761,7 +865,7 @@ ${chain}
           repo: repo.repo,
           // eslint-disable-next-line camelcase
           pull_number: context.payload.pull_request.number,
-          // eslint-disable-next-line camelcase
+
           per_page: 100,
           page
         })

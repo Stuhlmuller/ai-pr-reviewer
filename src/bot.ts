@@ -6,7 +6,6 @@ import {
   ChatGPTError,
   ChatMessage,
   SendMessageOptions
-  // eslint-disable-next-line import/no-unresolved
 } from 'chatgpt'
 import pRetry from 'p-retry'
 import {OpenAIOptions, Options} from './options'

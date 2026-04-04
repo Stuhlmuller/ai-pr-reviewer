@@ -1,4 +1,4 @@
-name: OpenAI Reviewer
+name: Linewright Review
 
 permissions:
   contents: read

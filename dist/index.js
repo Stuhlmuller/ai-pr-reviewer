@@ -4121,6 +4121,45 @@ IMPORTANT: Entire response must be in the language with ISO code: ${options.lang
 
 /***/ }),
 
+/***/ 8917:
+/***/ ((__unused_webpack_module, __webpack_exports__, __nccwpck_require__) => {
+
+"use strict";
+/* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
+/* harmony export */   $m: () => (/* binding */ bodyIncludesBotHandle),
+/* harmony export */   RI: () => (/* binding */ bodyIncludesIgnoreKeyword),
+/* harmony export */   Wm: () => (/* binding */ BOT_NAME),
+/* harmony export */   rl: () => (/* binding */ RELEASE_NOTES_TITLE)
+/* harmony export */ });
+/* unused harmony exports LEGACY_BOT_NAME, BOT_HANDLE, LEGACY_BOT_HANDLE, BOT_HANDLES, PRIMARY_IGNORE_KEYWORD, LEGACY_IGNORE_KEYWORD, IGNORE_KEYWORDS */
+const BOT_NAME = 'Linewright';
+const LEGACY_BOT_NAME = 'CodeReviewer';
+const BOT_HANDLE = '@linewright';
+const LEGACY_BOT_HANDLE = '@codereviewer';
+const BOT_HANDLES = [BOT_HANDLE, LEGACY_BOT_HANDLE];
+const PRIMARY_IGNORE_KEYWORD = `${BOT_HANDLE}: ignore`;
+const LEGACY_IGNORE_KEYWORD = `${LEGACY_BOT_HANDLE}: ignore`;
+const IGNORE_KEYWORDS = [
+    PRIMARY_IGNORE_KEYWORD,
+    LEGACY_IGNORE_KEYWORD
+];
+const RELEASE_NOTES_TITLE = `### Summary by ${BOT_NAME}`;
+function bodyIncludesAny(body, values) {
+    if (body == null || body === '') {
+        return false;
+    }
+    return values.some(value => body.includes(value));
+}
+function bodyIncludesBotHandle(body) {
+    return bodyIncludesAny(body, BOT_HANDLES);
+}
+function bodyIncludesIgnoreKeyword(body) {
+    return bodyIncludesAny(body, IGNORE_KEYWORDS);
+}
+
+
+/***/ }),
+
 /***/ 4742:
 /***/ ((__unused_webpack_module, __webpack_exports__, __nccwpck_require__) => {
 
@@ -4130,6 +4169,7 @@ IMPORTANT: Entire response must be in the language with ISO code: ${options.lang
 /* harmony export */   NI: () => (/* binding */ COMMENT_TAG),
 /* harmony export */   Nz: () => (/* binding */ SHORT_SUMMARY_END_TAG),
 /* harmony export */   S7: () => (/* binding */ RAW_SUMMARY_START_TAG),
+/* harmony export */   TP: () => (/* binding */ bodyHasTag),
 /* harmony export */   Zs: () => (/* binding */ SUMMARIZE_TAG),
 /* harmony export */   n1: () => (/* binding */ Commenter),
 /* harmony export */   tj: () => (/* binding */ RAW_SUMMARY_END_TAG),
@@ -4140,32 +4180,93 @@ IMPORTANT: Entire response must be in the language with ISO code: ${options.lang
 /* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__nccwpck_require__.n(_actions_core__WEBPACK_IMPORTED_MODULE_0__);
 /* harmony import */ var _actions_github__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(3228);
 /* harmony import */ var _actions_github__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__nccwpck_require__.n(_actions_github__WEBPACK_IMPORTED_MODULE_1__);
-/* harmony import */ var _octokit__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(419);
+/* harmony import */ var _brand__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(8917);
+/* harmony import */ var _octokit__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(419);
 
 // eslint-disable-next-line camelcase
+
 
 
 // eslint-disable-next-line camelcase
 const context = _actions_github__WEBPACK_IMPORTED_MODULE_1__.context;
 const repo = context.repo;
-const COMMENT_GREETING = `${(0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput)('bot_icon')} CodeReviewer`;
-const COMMENT_TAG = '<!-- This is an auto-generated comment by OSS CodeReviewer -->';
-const COMMENT_REPLY_TAG = '<!-- This is an auto-generated reply by OSS CodeReviewer -->';
-const SUMMARIZE_TAG = '<!-- This is an auto-generated comment: summarize by OSS CodeReviewer -->';
-const IN_PROGRESS_START_TAG = '<!-- This is an auto-generated comment: summarize review in progress by OSS CodeReviewer -->';
-const IN_PROGRESS_END_TAG = '<!-- end of auto-generated comment: summarize review in progress by OSS CodeReviewer -->';
-const DESCRIPTION_START_TAG = '<!-- This is an auto-generated comment: release notes by OSS CodeReviewer -->';
-const DESCRIPTION_END_TAG = '<!-- end of auto-generated comment: release notes by OSS CodeReviewer -->';
-const RAW_SUMMARY_START_TAG = `<!-- This is an auto-generated comment: raw summary by OSS CodeReviewer -->
+const COMMENT_GREETING = `${(0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput)('bot_icon')} ${_brand__WEBPACK_IMPORTED_MODULE_2__/* .BOT_NAME */ .Wm}`;
+const LEGACY_COMMENT_TAG = '<!-- This is an auto-generated comment by OSS CodeReviewer -->';
+const COMMENT_TAG = '<!-- This is an auto-generated comment by OSS Linewright -->';
+const LEGACY_COMMENT_REPLY_TAG = '<!-- This is an auto-generated reply by OSS CodeReviewer -->';
+const COMMENT_REPLY_TAG = '<!-- This is an auto-generated reply by OSS Linewright -->';
+const LEGACY_SUMMARIZE_TAG = '<!-- This is an auto-generated comment: summarize by OSS CodeReviewer -->';
+const SUMMARIZE_TAG = '<!-- This is an auto-generated comment: summarize by OSS Linewright -->';
+const LEGACY_IN_PROGRESS_START_TAG = '<!-- This is an auto-generated comment: summarize review in progress by OSS CodeReviewer -->';
+const IN_PROGRESS_START_TAG = '<!-- This is an auto-generated comment: summarize review in progress by OSS Linewright -->';
+const LEGACY_IN_PROGRESS_END_TAG = '<!-- end of auto-generated comment: summarize review in progress by OSS CodeReviewer -->';
+const IN_PROGRESS_END_TAG = '<!-- end of auto-generated comment: summarize review in progress by OSS Linewright -->';
+const LEGACY_DESCRIPTION_START_TAG = '<!-- This is an auto-generated comment: release notes by OSS CodeReviewer -->';
+const DESCRIPTION_START_TAG = '<!-- This is an auto-generated comment: release notes by OSS Linewright -->';
+const LEGACY_DESCRIPTION_END_TAG = '<!-- end of auto-generated comment: release notes by OSS CodeReviewer -->';
+const DESCRIPTION_END_TAG = '<!-- end of auto-generated comment: release notes by OSS Linewright -->';
+const LEGACY_RAW_SUMMARY_START_TAG = `<!-- This is an auto-generated comment: raw summary by OSS CodeReviewer -->
 <!--
 `;
-const RAW_SUMMARY_END_TAG = `-->
+const RAW_SUMMARY_START_TAG = `<!-- This is an auto-generated comment: raw summary by OSS Linewright -->
+<!--
+`;
+const LEGACY_RAW_SUMMARY_END_TAG = `-->
 <!-- end of auto-generated comment: raw summary by OSS CodeReviewer -->`;
-const SHORT_SUMMARY_START_TAG = `<!-- This is an auto-generated comment: short summary by OSS CodeReviewer -->
+const RAW_SUMMARY_END_TAG = `-->
+<!-- end of auto-generated comment: raw summary by OSS Linewright -->`;
+const LEGACY_SHORT_SUMMARY_START_TAG = `<!-- This is an auto-generated comment: short summary by OSS CodeReviewer -->
 <!--
 `;
-const SHORT_SUMMARY_END_TAG = `-->
+const SHORT_SUMMARY_START_TAG = `<!-- This is an auto-generated comment: short summary by OSS Linewright -->
+<!--
+`;
+const LEGACY_SHORT_SUMMARY_END_TAG = `-->
 <!-- end of auto-generated comment: short summary by OSS CodeReviewer -->`;
+const SHORT_SUMMARY_END_TAG = `-->
+<!-- end of auto-generated comment: short summary by OSS Linewright -->`;
+const TAG_ALIASES = {
+    [COMMENT_TAG]: [COMMENT_TAG, LEGACY_COMMENT_TAG],
+    [COMMENT_REPLY_TAG]: [COMMENT_REPLY_TAG, LEGACY_COMMENT_REPLY_TAG],
+    [SUMMARIZE_TAG]: [SUMMARIZE_TAG, LEGACY_SUMMARIZE_TAG],
+    [IN_PROGRESS_START_TAG]: [IN_PROGRESS_START_TAG, LEGACY_IN_PROGRESS_START_TAG],
+    [IN_PROGRESS_END_TAG]: [IN_PROGRESS_END_TAG, LEGACY_IN_PROGRESS_END_TAG],
+    [DESCRIPTION_START_TAG]: [DESCRIPTION_START_TAG, LEGACY_DESCRIPTION_START_TAG],
+    [DESCRIPTION_END_TAG]: [DESCRIPTION_END_TAG, LEGACY_DESCRIPTION_END_TAG],
+    [RAW_SUMMARY_START_TAG]: [RAW_SUMMARY_START_TAG, LEGACY_RAW_SUMMARY_START_TAG],
+    [RAW_SUMMARY_END_TAG]: [RAW_SUMMARY_END_TAG, LEGACY_RAW_SUMMARY_END_TAG],
+    [SHORT_SUMMARY_START_TAG]: [
+        SHORT_SUMMARY_START_TAG,
+        LEGACY_SHORT_SUMMARY_START_TAG
+    ],
+    [SHORT_SUMMARY_END_TAG]: [SHORT_SUMMARY_END_TAG, LEGACY_SHORT_SUMMARY_END_TAG]
+};
+function getTagAliases(tag) {
+    return TAG_ALIASES[tag] ?? [tag];
+}
+function getTagAliasPairs(startTag, endTag) {
+    const startTags = getTagAliases(startTag);
+    const endTags = getTagAliases(endTag);
+    const pairCount = Math.max(startTags.length, endTags.length);
+    return Array.from({ length: pairCount }, (_, index) => [
+        startTags[index] ?? startTag,
+        endTags[index] ?? endTag
+    ]);
+}
+function bodyHasTag(body, tag) {
+    if (body == null || body === '') {
+        return false;
+    }
+    return getTagAliases(tag).some(alias => body.includes(alias));
+}
+function replaceTagAlias(body, fromTag, toTag) {
+    for (const alias of getTagAliases(fromTag)) {
+        if (body.includes(alias)) {
+            return body.replace(alias, toTag);
+        }
+    }
+    return body;
+}
 const COMMIT_ID_START_TAG = '<!-- commit_ids_reviewed_start -->';
 const COMMIT_ID_END_TAG = '<!-- commit_ids_reviewed_end -->';
 const REVIEW_STATE_START_TAG = '<!-- review_state_start -->';
@@ -4206,18 +4307,23 @@ ${tag}`;
         }
     }
     getContentWithinTags(content, startTag, endTag) {
-        const start = content.indexOf(startTag);
-        const end = content.indexOf(endTag);
-        if (start >= 0 && end >= 0) {
-            return content.slice(start + startTag.length, end);
+        for (const [candidateStartTag, candidateEndTag] of getTagAliasPairs(startTag, endTag)) {
+            const start = content.indexOf(candidateStartTag);
+            const end = content.indexOf(candidateEndTag);
+            if (start >= 0 && end >= 0) {
+                return content.slice(start + candidateStartTag.length, end);
+            }
         }
         return '';
     }
     removeContentWithinTags(content, startTag, endTag) {
-        const start = content.indexOf(startTag);
-        const end = content.lastIndexOf(endTag);
-        if (start >= 0 && end >= 0) {
-            return content.slice(0, start) + content.slice(end + endTag.length);
+        for (const [candidateStartTag, candidateEndTag] of getTagAliasPairs(startTag, endTag)) {
+            const start = content.indexOf(candidateStartTag);
+            const end = content.lastIndexOf(candidateEndTag);
+            if (start >= 0 && end >= 0) {
+                return (content.slice(0, start) +
+                    content.slice(end + candidateEndTag.length));
+            }
         }
         return content;
     }
@@ -4239,7 +4345,7 @@ ${tag}`;
         // for the tag (marker)
         try {
             // get latest description from PR
-            const pr = await _octokit__WEBPACK_IMPORTED_MODULE_2__/* .octokit */ .A.pulls.get({
+            const pr = await _octokit__WEBPACK_IMPORTED_MODULE_3__/* .octokit */ .A.pulls.get({
                 owner: repo.owner,
                 repo: repo.repo,
                 // eslint-disable-next-line camelcase
@@ -4252,7 +4358,7 @@ ${tag}`;
             const description = this.getDescription(body);
             const messageClean = this.removeContentWithinTags(message, DESCRIPTION_START_TAG, DESCRIPTION_END_TAG);
             const newDescription = `${description}\n${DESCRIPTION_START_TAG}\n${messageClean}\n${DESCRIPTION_END_TAG}`;
-            await _octokit__WEBPACK_IMPORTED_MODULE_2__/* .octokit */ .A.pulls.update({
+            await _octokit__WEBPACK_IMPORTED_MODULE_3__/* .octokit */ .A.pulls.update({
                 owner: repo.owner,
                 repo: repo.repo,
                 // eslint-disable-next-line camelcase
@@ -4280,7 +4386,7 @@ ${COMMENT_TAG}`;
     }
     async deletePendingReview(pullNumber) {
         try {
-            const reviews = await _octokit__WEBPACK_IMPORTED_MODULE_2__/* .octokit */ .A.pulls.listReviews({
+            const reviews = await _octokit__WEBPACK_IMPORTED_MODULE_3__/* .octokit */ .A.pulls.listReviews({
                 owner: repo.owner,
                 repo: repo.repo,
                 // eslint-disable-next-line camelcase
@@ -4290,7 +4396,7 @@ ${COMMENT_TAG}`;
             if (pendingReview) {
                 (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.info)(`Deleting pending review for PR #${pullNumber} id: ${pendingReview.id}`);
                 try {
-                    await _octokit__WEBPACK_IMPORTED_MODULE_2__/* .octokit */ .A.pulls.deletePendingReview({
+                    await _octokit__WEBPACK_IMPORTED_MODULE_3__/* .octokit */ .A.pulls.deletePendingReview({
                         owner: repo.owner,
                         repo: repo.repo,
                         // eslint-disable-next-line camelcase
@@ -4311,7 +4417,7 @@ ${COMMENT_TAG}`;
     async submitEmptyReview(pullNumber, commitId, body) {
         (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.info)(`Submitting empty review for PR #${pullNumber}`);
         try {
-            await _octokit__WEBPACK_IMPORTED_MODULE_2__/* .octokit */ .A.pulls.createReview({
+            await _octokit__WEBPACK_IMPORTED_MODULE_3__/* .octokit */ .A.pulls.createReview({
                 owner: repo.owner,
                 repo: repo.repo,
                 // eslint-disable-next-line camelcase
@@ -4330,10 +4436,10 @@ ${COMMENT_TAG}`;
         for (const comment of this.reviewCommentsBuffer) {
             const comments = await this.getCommentsAtRange(pullNumber, comment.path, comment.startLine, comment.endLine);
             for (const c of comments) {
-                if (c.body.includes(COMMENT_TAG)) {
+                if (bodyHasTag(c.body, COMMENT_TAG)) {
                     (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.info)(`Deleting review comment for ${comment.path}:${comment.startLine}-${comment.endLine}: ${comment.message}`);
                     try {
-                        await _octokit__WEBPACK_IMPORTED_MODULE_2__/* .octokit */ .A.pulls.deleteReviewComment({
+                        await _octokit__WEBPACK_IMPORTED_MODULE_3__/* .octokit */ .A.pulls.deleteReviewComment({
                             owner: repo.owner,
                             repo: repo.repo,
                             // eslint-disable-next-line camelcase
@@ -4375,7 +4481,7 @@ ${COMMENT_TAG}`;
                 ...this.generateCommentData(comment)
             };
             try {
-                await _octokit__WEBPACK_IMPORTED_MODULE_2__/* .octokit */ .A.pulls.createReviewComment(commentData);
+                await _octokit__WEBPACK_IMPORTED_MODULE_3__/* .octokit */ .A.pulls.createReviewComment(commentData);
             }
             catch (ee) {
                 (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.warning)(`Failed to create review comment: ${ee}`);
@@ -4396,7 +4502,7 @@ ${statusMsg}
         await this.deleteExistingComments(pullNumber);
         await this.deletePendingReview(pullNumber);
         try {
-            const review = await _octokit__WEBPACK_IMPORTED_MODULE_2__/* .octokit */ .A.pulls.createReview({
+            const review = await _octokit__WEBPACK_IMPORTED_MODULE_3__/* .octokit */ .A.pulls.createReview({
                 owner: repo.owner,
                 repo: repo.repo,
                 // eslint-disable-next-line camelcase
@@ -4406,7 +4512,7 @@ ${statusMsg}
                 comments: this.reviewCommentsBuffer.map(comment => this.generateCommentData(comment))
             });
             (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.info)(`Submitting review for PR #${pullNumber}, total comments: ${this.reviewCommentsBuffer.length}, review id: ${review.data.id}`);
-            await _octokit__WEBPACK_IMPORTED_MODULE_2__/* .octokit */ .A.pulls.submitReview({
+            await _octokit__WEBPACK_IMPORTED_MODULE_3__/* .octokit */ .A.pulls.submitReview({
                 owner: repo.owner,
                 repo: repo.repo,
                 // eslint-disable-next-line camelcase
@@ -4432,7 +4538,7 @@ ${COMMENT_REPLY_TAG}
 `;
         try {
             // Post the reply to the user comment
-            await _octokit__WEBPACK_IMPORTED_MODULE_2__/* .octokit */ .A.pulls.createReplyForReviewComment({
+            await _octokit__WEBPACK_IMPORTED_MODULE_3__/* .octokit */ .A.pulls.createReplyForReviewComment({
                 owner: repo.owner,
                 repo: repo.repo,
                 // eslint-disable-next-line camelcase
@@ -4445,7 +4551,7 @@ ${COMMENT_REPLY_TAG}
         catch (error) {
             (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.warning)(`Failed to reply to the top-level comment ${error}`);
             try {
-                await _octokit__WEBPACK_IMPORTED_MODULE_2__/* .octokit */ .A.pulls.createReplyForReviewComment({
+                await _octokit__WEBPACK_IMPORTED_MODULE_3__/* .octokit */ .A.pulls.createReplyForReviewComment({
                     owner: repo.owner,
                     repo: repo.repo,
                     // eslint-disable-next-line camelcase
@@ -4460,10 +4566,9 @@ ${COMMENT_REPLY_TAG}
             }
         }
         try {
-            if (topLevelComment.body.includes(COMMENT_TAG)) {
-                // replace COMMENT_TAG with COMMENT_REPLY_TAG in topLevelComment
-                const newBody = topLevelComment.body.replace(COMMENT_TAG, COMMENT_REPLY_TAG);
-                await _octokit__WEBPACK_IMPORTED_MODULE_2__/* .octokit */ .A.pulls.updateReviewComment({
+            if (bodyHasTag(topLevelComment.body, COMMENT_TAG)) {
+                const newBody = replaceTagAlias(topLevelComment.body, COMMENT_TAG, COMMENT_REPLY_TAG);
+                await _octokit__WEBPACK_IMPORTED_MODULE_3__/* .octokit */ .A.pulls.updateReviewComment({
                     owner: repo.owner,
                     repo: repo.repo,
                     // eslint-disable-next-line camelcase
@@ -4508,7 +4613,7 @@ ${COMMENT_REPLY_TAG}
         for (const topLevelComment of topLevelComments) {
             // get conversation chain
             const chain = await this.composeCommentChain(existingComments, topLevelComment);
-            if (chain?.includes(tag)) {
+            if (tag === '' || bodyHasTag(chain, tag)) {
                 chainNum += 1;
                 allChains += `Conversation Chain ${chainNum}:
 ${chain}
@@ -4562,7 +4667,7 @@ ${chain}
         let page = 1;
         try {
             for (;;) {
-                const { data: comments } = await _octokit__WEBPACK_IMPORTED_MODULE_2__/* .octokit */ .A.pulls.listReviewComments({
+                const { data: comments } = await _octokit__WEBPACK_IMPORTED_MODULE_3__/* .octokit */ .A.pulls.listReviewComments({
                     owner: repo.owner,
                     repo: repo.repo,
                     // eslint-disable-next-line camelcase
@@ -4588,7 +4693,7 @@ ${chain}
     async create(body, target) {
         try {
             // get comment ID from the response
-            const response = await _octokit__WEBPACK_IMPORTED_MODULE_2__/* .octokit */ .A.issues.createComment({
+            const response = await _octokit__WEBPACK_IMPORTED_MODULE_3__/* .octokit */ .A.issues.createComment({
                 owner: repo.owner,
                 repo: repo.repo,
                 // eslint-disable-next-line camelcase
@@ -4611,7 +4716,7 @@ ${chain}
         try {
             const cmt = await this.findCommentWithTag(tag, target);
             if (cmt) {
-                await _octokit__WEBPACK_IMPORTED_MODULE_2__/* .octokit */ .A.issues.updateComment({
+                await _octokit__WEBPACK_IMPORTED_MODULE_3__/* .octokit */ .A.issues.updateComment({
                     owner: repo.owner,
                     repo: repo.repo,
                     // eslint-disable-next-line camelcase
@@ -4631,7 +4736,7 @@ ${chain}
         try {
             const comments = await this.listComments(target);
             for (const cmt of comments) {
-                if (cmt.body?.includes(tag)) {
+                if (bodyHasTag(cmt.body, tag)) {
                     return cmt;
                 }
             }
@@ -4651,7 +4756,7 @@ ${chain}
         let page = 1;
         try {
             for (;;) {
-                const { data: comments } = await _octokit__WEBPACK_IMPORTED_MODULE_2__/* .octokit */ .A.issues.listComments({
+                const { data: comments } = await _octokit__WEBPACK_IMPORTED_MODULE_3__/* .octokit */ .A.issues.listComments({
                     owner: repo.owner,
                     repo: repo.repo,
                     // eslint-disable-next-line camelcase
@@ -4726,7 +4831,7 @@ ${chain}
         let commits;
         if (context?.payload?.pull_request != null) {
             do {
-                commits = await _octokit__WEBPACK_IMPORTED_MODULE_2__/* .octokit */ .A.pulls.listCommits({
+                commits = await _octokit__WEBPACK_IMPORTED_MODULE_3__/* .octokit */ .A.pulls.listCommits({
                     owner: repo.owner,
                     repo: repo.repo,
                     // eslint-disable-next-line camelcase
@@ -13110,13 +13215,13 @@ $raw_summary
 
 `;
     summarizeShort = `Your task is to provide a concise summary of the changes. This 
-summary will be used as a prompt while reviewing each file and must be very clear for 
-the AI bot to understand. 
+summary will be used as shared context while reviewing each file and must be very clear for 
+the reviewer to understand. 
 
 Instructions:
 
 - Focus on summarizing only the changes in the PR and stick to the facts.
-- Do not provide any instructions to the bot on how to perform the review.
+- Do not provide any instructions to the reviewer on how to perform the review.
 - Do not mention that files need a through review or caution about potential issues.
 - Do not mention that these changes affect the logic or functionality of the code.
 - The summary should not exceed 500 words.
@@ -13227,7 +13332,7 @@ the instructions in that comment.
 $description
 \`\`\`
 
-## Summary generated by the AI bot
+## Summary generated by the reviewer
 
 \`\`\`
 $short_summary
@@ -13349,11 +13454,13 @@ $comment
 /* harmony import */ var _actions_github__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(3228);
 /* harmony import */ var _actions_github__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__nccwpck_require__.n(_actions_github__WEBPACK_IMPORTED_MODULE_1__);
 /* harmony import */ var _commenter__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(4742);
-/* harmony import */ var _inputs__WEBPACK_IMPORTED_MODULE_5__ = __nccwpck_require__(6107);
-/* harmony import */ var _octokit__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(419);
-/* harmony import */ var _tokenizer__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(7134);
+/* harmony import */ var _brand__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(8917);
+/* harmony import */ var _inputs__WEBPACK_IMPORTED_MODULE_6__ = __nccwpck_require__(6107);
+/* harmony import */ var _octokit__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(419);
+/* harmony import */ var _tokenizer__WEBPACK_IMPORTED_MODULE_5__ = __nccwpck_require__(7134);
 
 // eslint-disable-next-line camelcase
+
 
 
 
@@ -13362,7 +13469,6 @@ $comment
 // eslint-disable-next-line camelcase
 const context = _actions_github__WEBPACK_IMPORTED_MODULE_1__.context;
 const repo = context.repo;
-const ASK_BOT = '@codereviewer';
 function validateEvent() {
     if (context.eventName !== 'pull_request_review_comment') {
         (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.warning)(`Skipped: ${context.eventName} is not a pull_request_review_comment event`);
@@ -13395,7 +13501,7 @@ function setupInputsFromContext(commenter, inputs, pullRequest) {
 }
 async function getFileDiff(filename, baseSha, headSha) {
     try {
-        const diffAll = await _octokit__WEBPACK_IMPORTED_MODULE_3__/* .octokit */ .A.repos.compareCommits({
+        const diffAll = await _octokit__WEBPACK_IMPORTED_MODULE_4__/* .octokit */ .A.repos.compareCommits({
             owner: repo.owner,
             repo: repo.repo,
             base: baseSha,
@@ -13414,13 +13520,13 @@ async function getFileDiff(filename, baseSha, headSha) {
     return '';
 }
 async function validateAndPackTokens(commenter, inputs, prompts, options, fileDiff, pullNumber) {
-    let tokens = (0,_tokenizer__WEBPACK_IMPORTED_MODULE_4__/* .getTokenCount */ .N)(prompts.renderComment(inputs));
+    let tokens = (0,_tokenizer__WEBPACK_IMPORTED_MODULE_5__/* .getTokenCount */ .N)(prompts.renderComment(inputs));
     if (tokens > options.heavyTokenLimits.requestTokens) {
         return false;
     }
     if (fileDiff.length > 0) {
         const fileDiffCount = prompts.comment.split('$file_diff').length - 1;
-        const fileDiffTokens = (0,_tokenizer__WEBPACK_IMPORTED_MODULE_4__/* .getTokenCount */ .N)(fileDiff);
+        const fileDiffTokens = (0,_tokenizer__WEBPACK_IMPORTED_MODULE_5__/* .getTokenCount */ .N)(fileDiff);
         if (fileDiffCount > 0 &&
             tokens + fileDiffTokens * fileDiffCount <=
                 options.heavyTokenLimits.requestTokens) {
@@ -13431,7 +13537,7 @@ async function validateAndPackTokens(commenter, inputs, prompts, options, fileDi
     const summary = await commenter.findCommentWithTag(_commenter__WEBPACK_IMPORTED_MODULE_2__/* .SUMMARIZE_TAG */ .Zs, pullNumber);
     if (summary) {
         const shortSummary = commenter.getShortSummary(summary.body);
-        const shortSummaryTokens = (0,_tokenizer__WEBPACK_IMPORTED_MODULE_4__/* .getTokenCount */ .N)(shortSummary);
+        const shortSummaryTokens = (0,_tokenizer__WEBPACK_IMPORTED_MODULE_5__/* .getTokenCount */ .N)(shortSummary);
         if (tokens + shortSummaryTokens <= options.heavyTokenLimits.requestTokens) {
             inputs.shortSummary = shortSummary;
         }
@@ -13449,9 +13555,9 @@ const handleReviewComment = async (heavyBot, options, prompts) => {
         return;
     }
     const commenter = new _commenter__WEBPACK_IMPORTED_MODULE_2__/* .Commenter */ .n1();
-    const inputs = new _inputs__WEBPACK_IMPORTED_MODULE_5__/* .Inputs */ .G();
-    if (comment.body.includes(_commenter__WEBPACK_IMPORTED_MODULE_2__/* .COMMENT_TAG */ .NI) ||
-        comment.body.includes(_commenter__WEBPACK_IMPORTED_MODULE_2__/* .COMMENT_REPLY_TAG */ .uH)) {
+    const inputs = new _inputs__WEBPACK_IMPORTED_MODULE_6__/* .Inputs */ .G();
+    if ((0,_commenter__WEBPACK_IMPORTED_MODULE_2__/* .bodyHasTag */ .TP)(comment.body, _commenter__WEBPACK_IMPORTED_MODULE_2__/* .COMMENT_TAG */ .NI) ||
+        (0,_commenter__WEBPACK_IMPORTED_MODULE_2__/* .bodyHasTag */ .TP)(comment.body, _commenter__WEBPACK_IMPORTED_MODULE_2__/* .COMMENT_REPLY_TAG */ .uH)) {
         (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.info)(`Skipped: ${context.eventName} event is from the bot itself`);
         return;
     }
@@ -13466,9 +13572,9 @@ const handleReviewComment = async (heavyBot, options, prompts) => {
         return;
     }
     inputs.commentChain = commentChain;
-    const shouldReply = commentChain.includes(_commenter__WEBPACK_IMPORTED_MODULE_2__/* .COMMENT_TAG */ .NI) ||
-        commentChain.includes(_commenter__WEBPACK_IMPORTED_MODULE_2__/* .COMMENT_REPLY_TAG */ .uH) ||
-        comment.body.includes(ASK_BOT);
+    const shouldReply = (0,_commenter__WEBPACK_IMPORTED_MODULE_2__/* .bodyHasTag */ .TP)(commentChain, _commenter__WEBPACK_IMPORTED_MODULE_2__/* .COMMENT_TAG */ .NI) ||
+        (0,_commenter__WEBPACK_IMPORTED_MODULE_2__/* .bodyHasTag */ .TP)(commentChain, _commenter__WEBPACK_IMPORTED_MODULE_2__/* .COMMENT_REPLY_TAG */ .uH) ||
+        (0,_brand__WEBPACK_IMPORTED_MODULE_3__/* .bodyIncludesBotHandle */ .$m)(comment.body);
     if (!shouldReply) {
         return;
     }
@@ -14877,6 +14983,8 @@ class SecurityScanner {
     }
 }
 
+// EXTERNAL MODULE: ./lib/brand.js
+var brand = __nccwpck_require__(8917);
 ;// CONCATENATED MODULE: ./lib/skip-logic.js
 
 /**
@@ -15274,10 +15382,10 @@ var tokenizer = __nccwpck_require__(7134);
 
 
 
+
 // eslint-disable-next-line camelcase
 const context = github.context;
 const repo = context.repo;
-const ignoreKeyword = '@codereviewer: ignore';
 async function getHighestReviewedCommitId(commenter) {
     if (context.payload.pull_request == null) {
         throw new Error('pull_request is null');
@@ -15486,7 +15594,7 @@ async function generateFinalSummaries(heavyBot, commenter, inputs, prompts, opti
             (0,core.info)('release notes: nothing obtained from openai');
         }
         else {
-            const message = `### Summary by CodeReviewer\n\n${releaseNotesResponse}`;
+            const message = `${brand/* RELEASE_NOTES_TITLE */.rl}\n\n${releaseNotesResponse}`;
             try {
                 if (context.payload.pull_request != null) {
                     await commenter.updateDescription(context.payload.pull_request.number, message);
@@ -15684,7 +15792,7 @@ function validateEventAndSetup(commenter, inputs, options) {
     if (context.payload.pull_request.body != null) {
         inputs.description = commenter.getDescription(context.payload.pull_request.body);
     }
-    if (inputs.description.includes(ignoreKeyword)) {
+    if ((0,brand/* bodyIncludesIgnoreKeyword */.RI)(inputs.description)) {
         (0,core.info)('Skipped: description contains ignore_keyword');
         return false;
     }

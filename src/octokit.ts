@@ -30,7 +30,7 @@ Retry count: ${retryCount}
         return true
       }
     },
-    onSecondaryRateLimit: (retryAfter: number, options: any) => {
+    onSecondaryRateLimit: (retryAfter: number, options: unknown) => {
       warning(
         `SecondaryRateLimit detected for request ${options.method} ${options.url} ; retry after ${retryAfter} seconds`
       )

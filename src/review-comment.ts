@@ -4,10 +4,12 @@ import {context as github_context} from '@actions/github'
 import {type Bot} from './bot'
 import {
   Commenter,
+  bodyHasTag,
   COMMENT_REPLY_TAG,
   COMMENT_TAG,
   SUMMARIZE_TAG
 } from './commenter'
+import {bodyIncludesBotHandle} from './brand'
 import {Inputs} from './inputs'
 import {octokit} from './octokit'
 import {type Options} from './options'
@@ -17,7 +19,6 @@ import {getTokenCount} from './tokenizer'
 // eslint-disable-next-line camelcase
 const context = github_context
 const repo = context.repo
-const ASK_BOT = '@codereviewer'
 
 function validateEvent(): boolean {
   if (context.eventName !== 'pull_request_review_comment') {
@@ -147,8 +148,8 @@ export const handleReviewComment = async (
   const inputs: Inputs = new Inputs()
 
   if (
-    comment.body.includes(COMMENT_TAG) ||
-    comment.body.includes(COMMENT_REPLY_TAG)
+    bodyHasTag(comment.body, COMMENT_TAG) ||
+    bodyHasTag(comment.body, COMMENT_REPLY_TAG)
   ) {
     info(`Skipped: ${context.eventName} event is from the bot itself`)
     return
@@ -172,9 +173,9 @@ export const handleReviewComment = async (
   inputs.commentChain = commentChain
 
   const shouldReply =
-    commentChain.includes(COMMENT_TAG) ||
-    commentChain.includes(COMMENT_REPLY_TAG) ||
-    comment.body.includes(ASK_BOT)
+    bodyHasTag(commentChain, COMMENT_TAG) ||
+    bodyHasTag(commentChain, COMMENT_REPLY_TAG) ||
+    bodyIncludesBotHandle(comment.body)
 
   if (!shouldReply) {
     return

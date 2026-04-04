@@ -109,7 +109,7 @@ process
   .on('unhandledRejection', (reason, p) => {
     warning(`Unhandled Rejection at Promise: ${reason}, promise is ${p}`)
   })
-  .on('uncaughtException', (e: any) => {
+  .on('uncaughtException', (e: unknown) => {
     warning(`Uncaught Exception thrown: ${e}, backtrace: ${e.stack}`)
   })
 
