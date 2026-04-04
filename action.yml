@@ -219,11 +219,11 @@ inputs:
     required: false
     description:
       'Model to use for simple tasks like summarizing diff on a file.'
-    default: 'gpt-3.5-turbo'
+    default: 'gpt-4o-mini'
   openai_heavy_model:
     required: false
     description: 'Model to use for complex tasks such as code reviews.'
-    default: 'gpt-4'
+    default: 'gpt-4o-mini'
   openai_model_temperature:
     required: false
     description: 'Temperature for GPT model'
@@ -303,5 +303,5 @@ inputs:
     description: 'The icon for the bot'
     default: '🔍'
 runs:
-  using: 'node16'
+  using: 'node20'
   main: 'dist/index.js'
