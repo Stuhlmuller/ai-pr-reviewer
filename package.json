@@ -28,7 +28,7 @@
   "dependencies": {
     "@actions/core": "^3.0.0",
     "@actions/github": "^9.0.0",
-    "@anthropic-ai/sdk": "^0.90.0",
+    "@anthropic-ai/sdk": "^0.91.0",
     "@dqbd/tiktoken": "^1.0.22",
     "@octokit/action": "^8.0.4",
     "@octokit/plugin-retry": "^8.0.3",
