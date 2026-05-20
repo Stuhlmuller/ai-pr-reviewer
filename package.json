@@ -28,7 +28,7 @@
   "dependencies": {
     "@actions/core": "^3.0.0",
     "@actions/github": "^9.0.0",
-    "@anthropic-ai/sdk": "^0.95.0",
+    "@anthropic-ai/sdk": "^0.96.0",
     "@dqbd/tiktoken": "^1.0.22",
     "@octokit/action": "^8.0.4",
     "@octokit/plugin-retry": "^8.0.3",
@@ -45,7 +45,7 @@
     "@jest/globals": "30.4.1",
     "@semantic-release/commit-analyzer": "13.0.1",
     "@semantic-release/release-notes-generator": "14.1.1",
-    "@types/node": "25.7.0",
+    "@types/node": "25.8.0",
     "@typescript-eslint/eslint-plugin": "8.59.3",
     "@typescript-eslint/parser": "8.59.3",
     "@vercel/ncc": "0.38.4",
