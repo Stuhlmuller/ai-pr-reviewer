@@ -28,7 +28,7 @@
   "dependencies": {
     "@actions/core": "^3.0.0",
     "@actions/github": "^9.0.0",
-    "@anthropic-ai/sdk": "^0.97.0",
+    "@anthropic-ai/sdk": "^0.98.0",
     "@dqbd/tiktoken": "^1.0.22",
     "@octokit/action": "^8.0.4",
     "@octokit/plugin-retry": "^8.0.3",
@@ -62,7 +62,7 @@
     "jest": "30.4.2",
     "js-yaml": "4.1.1",
     "prettier": "3.8.3",
-    "ts-jest": "29.4.10",
+    "ts-jest": "29.4.11",
     "typescript": "6.0.3"
   }
 }
